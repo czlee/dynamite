@@ -7,3 +7,5 @@ tempo.json
 
 client.py
 .cache-*
+google-credentials.json
+token.pickle
