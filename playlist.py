@@ -2,8 +2,13 @@ import argparse
 import json
 import spotipy
 import spotipy.util as util
-from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from utils import page
+
+try:
+    from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+except ImportError:
+    print("Error: Before using this, copy client.example to client.py and fill in its blanks")
+    exit(1)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('username')
