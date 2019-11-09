@@ -68,24 +68,26 @@ def find_playlists(file, track_id):
 @page(sp)
 def process_tracks(result, values):
     items = result['items']
-    track_ids = [item['track']['id'] for item in items]
-    features = sp.audio_features(track_ids)
+    track_ids = [item['track']['id'] for item in items if item['track']['id'] is not None]
+    features = {feature['id']: feature for feature in sp.audio_features(track_ids)}
 
-    for i, (item, feature) in enumerate(zip(items, features), start=1):
+    for i, item in enumerate(items, start=1):
         track = item['track']
+        track_id = track['id']
+        feature = features.get(track_id)
 
         artist = ", ".join(x['name'] for x in track['artists'])
         name = track['name']
-        tempo_range = " ".join(find_playlists('tempo.json', track['id']))
-        tempo = clip_tempo(feature['tempo'])
-        genres = ", ".join(find_playlists('genre.json', track['id']))
-        special = ", ".join(find_playlists('special.json', track['id']))
-        release = track['album']['release_date'][:4]
+        tempo_range = " ".join(find_playlists('tempo.json', track_id))
+        tempo = clip_tempo(feature['tempo']) if feature else 0
+        genres = ", ".join(find_playlists('genre.json', track_id))
+        special = ", ".join(find_playlists('special.json', track_id))
+        release = track['album']['release_date'][:4] if track['album']['release_date'] else '-'
 
         values.append([i, name, artist, tempo_range, tempo, release, genres, special])
         if not args.quiet:
             print(f"{i:3d} | {name[:35]:35s} | {artist[:25]:25s} | {tempo_range:>6s} "
-                  f"{tempo:3.0f} | {release:s} | {genres:s}")
+                  f"{tempo:3.0f} | {release:^4s} | {genres:s}")
 
 playlist_name = sp.user_playlist(username, playlist_id)['name']
 print("Getting playlist:", playlist_name)
