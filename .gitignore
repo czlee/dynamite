@@ -1,0 +1,9 @@
+venv
+__pycache__
+
+genre.json
+special.json
+tempo.json
+
+client.py
+.cache-*
