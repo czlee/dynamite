@@ -15,10 +15,29 @@ parser.add_argument('username')
 parser.add_argument('playlist_id')
 parser.add_argument('spreadsheet_id', nargs='?', default=None)
 parser.add_argument('--quiet', '-q', default=False, action='store_true')
+parser.add_argument('--named', '-n', default=False, action='store_true')
 args = parser.parse_args()
 
 username = args.username
 playlist_id = args.playlist_id
+
+if args.named:
+    # Try to find a cached playlist with this name
+    found = False
+    for category in ['genre', 'tempo', 'special']:
+        fp = open(category + '.json')
+        objs = json.load(fp)
+        fp.close()
+        for obj in objs:
+            if "WCS " + playlist_id == obj['name'] or playlist_id == obj['name']:
+                playlist_id = obj['id']
+                found = True
+                break
+        if found:
+            break
+    if not found:
+        print("Can't find ID for name:", playlist_id)
+        exit(1)
 
 token = util.prompt_for_user_token(username=args.username, scope='playlist-read-private',
     client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
@@ -68,13 +87,13 @@ def process_tracks(result, values):
             print(f"{i:3d} | {name[:35]:35s} | {artist[:25]:25s} | {tempo_range:>6s} "
                   f"{tempo:3.0f} | {release:s} | {genres:s}")
 
-playlist_name = sp.user_playlist(args.username, args.playlist_id)['name']
+playlist_name = sp.user_playlist(username, playlist_id)['name']
 print("Getting playlist:", playlist_name)
 
 values = [
     ["#", "Name", "Artist", "BPM list", "BPM", "Release", "Genres", "Special"],
 ]
-result = sp.user_playlist_tracks(args.username, args.playlist_id)
+result = sp.user_playlist_tracks(username, playlist_id)
 process_tracks(result, values)
 
 if args.spreadsheet_id:
