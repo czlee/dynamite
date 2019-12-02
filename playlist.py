@@ -69,37 +69,54 @@ def find_playlists(file, track_id):
     return names
 
 @page(sp)
-def process_tracks(result, values):
+def get_tracks_info(result):
+    infos = []
+
     items = result['items']
     track_ids = [item['track']['id'] for item in items if item['track']['id'] is not None]
-    features = {feature['id']: feature for feature in sp.audio_features(track_ids)}
+    features_by_track_id = {feature['id']: feature for feature in sp.audio_features(track_ids)}
 
     for i, item in enumerate(items, start=1):
         track = item['track']
-        track_id = track['id']
-        feature = features.get(track_id)
+        features = features_by_track_id.get(track['id'])
+        info = get_track_info(track, features)
+        infos.append(info)
 
-        artist = ", ".join(x['name'] for x in track['artists'])
-        name = track['name']
-        tempo_range = " ".join(find_playlists('tempo.json', track_id))
-        tempo = clip_tempo(feature['tempo']) if feature else 0
-        genres = ", ".join(find_playlists('genre.json', track_id))
-        special = ", ".join(find_playlists('special.json', track_id))
-        release = track['album']['release_date'][:4] if track['album']['release_date'] else '-'
-
-        values.append([i, name, artist, tempo_range, tempo, release, genres, special])
         if not args.quiet:
-            print(f"{i:3d} | {name[:35]:35s} | {artist[:25]:25s} | {tempo_range:>6s} "
-                  f"{tempo:3.0f} | {release:^4s} | {genres:s}")
+            print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
+                  f"{info['tempo_range']:>6s} {info['tempo']:3.0f} | "
+                  f"{info['release']:^4s} | {info['genres']:s}")
+
+    return infos
+
+def get_track_info(track, features=None):
+    track_id = track['id']
+
+    if not features and track_id:
+        features = sp.audio_features(track_id)[0]
+
+    info = {}
+    info['name'] = track['name']
+    info['artist'] = ", ".join(x['name'] for x in track['artists'])
+    info['tempo_range'] = " ".join(find_playlists('tempo.json', track_id))
+    info['tempo'] = clip_tempo(features['tempo']) if features else 0
+    info['release'] = track['album']['release_date'][:4] if track['album']['release_date'] else '-'
+    info['genres'] = ", ".join(find_playlists('genre.json', track_id))
+    info['special'] = ", ".join(find_playlists('special.json', track_id))
+
+    return info
+
 
 playlist_name = sp.user_playlist(username, playlist_id)['name']
 print("Getting playlist:", playlist_name)
 
-values = [
-    ["#", "Name", "Artist", "BPM list", "BPM", "Release", "Genres", "Special"],
-]
 result = sp.user_playlist_tracks(username, playlist_id)
-process_tracks(result, values)
+infos = get_tracks_info(result)
+
+values = [["#", "Name", "Artist", "BPM list", "BPM", "Release", "Genres", "Special"]]
+keys = ['name', 'artist', 'tempo_range', 'tempo', 'release', 'genres', 'special']
+for i, info in enumerate(infos):
+    values.append([i] + [info[key] for key in keys])
 
 if args.spreadsheet_id:
 
