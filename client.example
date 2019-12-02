@@ -1,3 +1,13 @@
+# Get your client ID and client secret from the Spotify Developer Dashboard.
 CLIENT_ID = ""
 CLIENT_SECRET = ""
+
+# This doesn't actually have to be a real URL; it's just where the Spotify API
+# will attempt to send a browser after a successful authentication. But this
+# URI does need to be registered in your Spotify Developer Dashboard, under
+# "Redirect URIs" under "Edit Settings" in your client.
 REDIRECT_URI = "http://some.url/"
+
+# Your username on Spotify. Your email address will work fine. Scripts use this
+# by default, unless you overwrite it with the '-u' option.
+SPOTIFY_USERNAME = ""

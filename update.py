@@ -2,22 +2,22 @@ import argparse
 import itertools
 import json
 import spotipy
-import spotipy.util as util
 from categories import CATEGORIES
 from utils import page
 
 try:
-    from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+    from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SPOTIFY_USERNAME
 except ImportError:
     print("Error: Before using this, copy client.example to client.py and fill in its blanks")
     exit(1)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('username')
+parser = argparse.ArgumentParser(description="Updates the category playlist cache")
+parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
+    help="Username of Spotify account to use. (default: %s)" % SPOTIFY_USERNAME)
 args = parser.parse_args()
 username = args.username
 
-token = util.prompt_for_user_token(username=args.username, scope='playlist-read-private',
+token = spotipy.prompt_for_user_token(username=args.username, scope='playlist-read-private',
     client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
 if not token:
     print("Can't get token for", username)

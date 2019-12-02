@@ -1,21 +1,24 @@
 import argparse
 import json
 import spotipy
-import spotipy.util as util
 from utils import page
 
 try:
-    from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+    from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SPOTIFY_USERNAME
 except ImportError:
     print("Error: Before using this, copy client.example to client.py and fill in its blanks")
     exit(1)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('username')
 parser.add_argument('playlist_id')
-parser.add_argument('spreadsheet_id', nargs='?', default=None)
-parser.add_argument('--quiet', '-q', default=False, action='store_true')
-parser.add_argument('--named', '-n', default=False, action='store_true')
+parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
+    help="Username of Spotify account to use. (default: %s)" % SPOTIFY_USERNAME)
+parser.add_argument('--spreadsheet-id', default=None,
+    help="Google Spreadsheet ID to insert collated data into. Experimental.")
+parser.add_argument('--quiet', '-q', default=False, action='store_true',
+    help="Don't print the information to the console")
+parser.add_argument('--named', '-n', default=False, action='store_true',
+    help="Interpret the playlist ID as a name, not a Spotify URI")
 args = parser.parse_args()
 
 username = args.username
@@ -39,8 +42,8 @@ if args.named:
         print("Can't find ID for name:", playlist_id)
         exit(1)
 
-token = util.prompt_for_user_token(username=args.username, scope='playlist-read-private',
-    client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
+token = spotipy.prompt_for_user_token(username=args.username, client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
 if not token:
     print("Can't get token for", username)
     exit(1)
