@@ -10,7 +10,7 @@ TEMPO_PLAYLISTS = [
 ]
 
 GENRE_PLAYLISTS = [
-    "WCS acoustic covers",
+    "WCS acoustic",
     "WCS alternative",
     "WCS blues",
     "WCS country",
