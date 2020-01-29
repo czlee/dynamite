@@ -19,6 +19,8 @@ parser.add_argument('--quiet', '-q', default=False, action='store_true',
     help="Don't print the information to the console")
 parser.add_argument('--named', '-n', default=False, action='store_true',
     help="Interpret the playlist ID as a name, not a Spotify URI")
+parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
+    help="Don't clip BPMs to be between 60 and 140")
 args = parser.parse_args()
 
 username = args.username
@@ -50,6 +52,8 @@ if not token:
 sp = spotipy.Spotify(auth=token)
 
 def clip_tempo(tempo):
+    if not args.bpm_clip:
+        return tempo
     if tempo < 60:
         return tempo * 2
     elif tempo > 140:
