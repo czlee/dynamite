@@ -22,6 +22,7 @@ GENRE_PLAYLISTS = [
     "WCS jazz-like",
     "WCS latin pop",
     "WCS reggae",
+    "WCS rock",
     "WCS soul/R&B",
     "WCS pre-1990 pop",
     "WCS 1990s pop",
@@ -29,6 +30,7 @@ GENRE_PLAYLISTS = [
     "WCS 2010s pop",
     "WCS European languages",
     "WCS European artists",
+    "WCS swung beat",
 ]
 
 SPECIAL_PLAYLISTS = [

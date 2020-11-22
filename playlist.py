@@ -80,16 +80,11 @@ def get_tracks_info(result):
     track_ids = [item['track']['id'] for item in items if item['track']['id'] is not None]
     features_by_track_id = {feature['id']: feature for feature in sp.audio_features(track_ids)}
 
-    for i, item in enumerate(items, start=1):
+    for item in items:
         track = item['track']
         features = features_by_track_id.get(track['id'])
         info = get_track_info(track, features)
         infos.append(info)
-
-        if not args.quiet:
-            print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
-                  f"{info['tempo_range']:>6s} {info['tempo']:3.0f} | "
-                  f"{info['release']:^4s} | {info['genres']:s}")
 
     return infos
 
@@ -119,8 +114,13 @@ infos = get_tracks_info(result)
 
 values = [["#", "Name", "Artist", "BPM list", "BPM", "Release", "Genres", "Special"]]
 keys = ['name', 'artist', 'tempo_range', 'tempo', 'release', 'genres', 'special']
-for i, info in enumerate(infos):
+for i, info in enumerate(infos, start=1):
     values.append([i] + [info[key] for key in keys])
+
+    if not args.quiet:
+        print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
+              f"{info['tempo_range']:>6s} {info['tempo']:3.0f} | "
+              f"{info['release']:^4s} | {info['genres']:s}")
 
 if args.spreadsheet_id:
 
