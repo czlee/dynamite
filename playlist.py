@@ -1,5 +1,6 @@
 import argparse
 import json
+import re
 import spotipy
 from utils import page
 
@@ -10,15 +11,14 @@ except ImportError:
     exit(1)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('playlist_id')
+parser.add_argument('playlist',
+    help="Playlist to show, specify by either name or ID")
 parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
     help="Username of Spotify account to use. (default: %s)" % SPOTIFY_USERNAME)
 parser.add_argument('--spreadsheet-id', default=None,
     help="Google Spreadsheet ID to insert collated data into. Experimental.")
 parser.add_argument('--quiet', '-q', default=False, action='store_true',
     help="Don't print the information to the console")
-parser.add_argument('--named', '-n', default=False, action='store_true',
-    help="Interpret the playlist ID as a name, not a Spotify URI")
 parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
     help="Don't clip BPMs to be between 60 and 140")
 parser.add_argument('--release-date-precision', '-r', default='year', choices=['year', 'month', 'day'],
@@ -26,25 +26,29 @@ parser.add_argument('--release-date-precision', '-r', default='year', choices=['
 args = parser.parse_args()
 
 username = args.username
-playlist_id = args.playlist_id
 
-if args.named:
-    # Try to find a cached playlist with this name
-    found = False
+def find_cached_playlist(name):
+    """Returns the ID of the playlist with this name, if it's in the playlist
+    cache. Returns None if no such ID found."""
+
     for category in ['genre', 'tempo', 'status', 'special']:
         fp = open(category + '.json')
         objs = json.load(fp)
         fp.close()
         for obj in objs:
-            if "WCS " + playlist_id == obj['name'] or playlist_id == obj['name']:
-                playlist_id = obj['id']
-                found = True
-                break
-        if found:
-            break
-    if not found:
-        print("Can't find ID for name:", playlist_id)
+            if "WCS " + name == obj['name'] or name == obj['name']:
+                return obj['id']
+    return None
+
+playlist_id = find_cached_playlist(args.playlist)
+if playlist_id is None:
+    if re.match(r'[0-9A-Za-z]{22}', args.playlist[-22:]):
+        playlist_id = args.playlist
+    else:
+        print("Couldn't find in the playlist cache, and this doesn't look like a playlist ID either:")
+        print("    " + args.playlist)
         exit(1)
+
 
 token = spotipy.prompt_for_user_token(username=args.username, client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
