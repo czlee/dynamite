@@ -4,6 +4,7 @@ __pycache__
 genre.json
 special.json
 tempo.json
+status.json
 
 client.py
 .cache-*
