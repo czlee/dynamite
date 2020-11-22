@@ -21,6 +21,8 @@ parser.add_argument('--named', '-n', default=False, action='store_true',
     help="Interpret the playlist ID as a name, not a Spotify URI")
 parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
     help="Don't clip BPMs to be between 60 and 140")
+parser.add_argument('--release-date-precision', '-r', default='year', choices=['year', 'month', 'day'],
+    help="Display release date to this level of precistion")
 args = parser.parse_args()
 
 username = args.username
@@ -29,7 +31,7 @@ playlist_id = args.playlist_id
 if args.named:
     # Try to find a cached playlist with this name
     found = False
-    for category in ['genre', 'tempo', 'special']:
+    for category in ['genre', 'tempo', 'status', 'special']:
         fp = open(category + '.json')
         objs = json.load(fp)
         fp.close()
@@ -99,11 +101,18 @@ def get_track_info(track, features=None):
     info['artist'] = ", ".join(x['name'] for x in track['artists'])
     info['tempo_range'] = " ".join(find_playlists('tempo.json', track_id))
     info['tempo'] = clip_tempo(features['tempo']) if features else 0
-    info['release'] = track['album']['release_date'][:4] if track['album']['release_date'] else '-'
+    info['release'] = format_release_date(track['album']['release_date'])
     info['genres'] = ", ".join(find_playlists('genre.json', track_id))
     info['special'] = ", ".join(find_playlists('special.json', track_id))
 
     return info
+
+def format_release_date(release_date, precision=args.release_date_precision):
+    """Formats release date according to user argument"""
+    length = {'year': 4, 'month': 7, 'day': 10}[precision]
+    if release_date is None:
+        return '-'.ljust(length)
+    return release_date[:length].ljust(length)
 
 
 playlist_name = sp.user_playlist(username, playlist_id)['name']
