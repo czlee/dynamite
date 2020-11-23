@@ -11,3 +11,10 @@ REDIRECT_URI = "http://some.url/"
 # Your username on Spotify. Your email address will work fine. Scripts use this
 # by default, unless you overwrite it with the '-u' option.
 SPOTIFY_USERNAME = ""
+
+# These are used (only) by removed.py. If you omit them, the other scripts won't
+# complain.
+REMOVED_PLAYLIST_ID = ""
+REMOVED_PLAYLIST_NAME = ""
+ALL_PLAYLIST_ID = ""
+ALL_PLAYLIST_NAME = ""
