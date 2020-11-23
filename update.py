@@ -1,3 +1,5 @@
+"""Updates the category playlist cache."""
+
 import argparse
 import itertools
 import json
@@ -11,7 +13,7 @@ except ImportError:
     print("Error: Before using this, copy client.example to client.py and fill in its blanks")
     exit(1)
 
-parser = argparse.ArgumentParser(description="Updates the category playlist cache")
+parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
     help="Username of Spotify account to use. (default: %s)" % SPOTIFY_USERNAME)
 args = parser.parse_args()

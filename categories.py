@@ -1,3 +1,5 @@
+"""Lists of playlists. Used by other scripts to iterate through playlists. Maintained by hand."""
+
 TEMPO_PLAYLISTS = [
     "WCS 60bpm",
     "WCS 70bpm",
