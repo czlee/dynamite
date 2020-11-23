@@ -50,13 +50,20 @@ def handle_playlist(playlist_id, playlist_name):
     playlist_track_ids = set(playlist_track_names.keys())
     found_in_playlist = removed_track_ids & playlist_track_ids
 
-    if found_in_playlist:
-        if args.confirm_remove:
-            print(f"Would remove from {playlist_name}:")
-        else:
-            print(f"Removing from {playlist_name}:")
-        for track_id in found_in_playlist:
-            print("  - " + playlist_track_names[track_id])
+    if not found_in_playlist:
+        return
+
+    if args.confirm_remove:
+        print(f"Removing from {playlist_name}:")
+    else:
+        print(f"Would remove from {playlist_name}:")
+
+    for track_id in found_in_playlist:
+        print("  - " + playlist_track_names[track_id])
+
+    if args.confirm_remove:
+        sp.playlist_remove_all_occurrences_of_items(playlist_id, found_in_playlist)
+
 
 
 handle_playlist(ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME)
