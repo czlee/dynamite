@@ -15,8 +15,6 @@ parser.add_argument('playlist',
     help="Playlist to show, specify by either name or ID")
 parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
     help="Username of Spotify account to use. (default: %s)" % SPOTIFY_USERNAME)
-parser.add_argument('--spreadsheet-id', default=None,
-    help="Google Spreadsheet ID to insert collated data into. Experimental.")
 parser.add_argument('--quiet', '-q', default=False, action='store_true',
     help="Don't print the information to the console")
 parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
@@ -134,41 +132,3 @@ for i, info in enumerate(infos, start=1):
         print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
               f"{info['tempo_range']:>6s} {info['tempo']:3.0f} | "
               f"{info['release']:^4s} | {info['genres']:s}")
-
-if args.spreadsheet_id:
-
-    # This part is taken from the quickstart:
-    # https://developers.google.com/sheets/api/quickstart/python
-    from googleapiclient.discovery import build
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from google.auth.transport.requests import Request
-    import os.path
-    import pickle
-
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'google-credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('sheets', 'v4', credentials=creds)
-    range_name = "'{}'!A1".format(playlist_name)
-
-    result = service.spreadsheets().values().append(
-        spreadsheetId=args.spreadsheet_id, range=range_name,
-        valueInputOption='RAW', body={'values': values}).execute()
