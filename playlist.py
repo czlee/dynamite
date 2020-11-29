@@ -1,13 +1,11 @@
 """Retrieves and displays a given Spotify playlist with relevant additional data."""
 
 import argparse
-import difflib
 import json
 import tekore
 
-from categories import CATEGORIES
 from cached import CachedPlaylistGroup
-from utils import format_artists, format_release_date, format_tempo, get_spotify_object, parse_potential_uri
+from utils import format_artists, format_release_date, format_tempo, get_spotify_object, parse_playlist_arg
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
@@ -20,20 +18,6 @@ parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
     help="File to use to store Tekore (Spotify) user token")
 args = parser.parse_args()
 
-
-def find_cached_playlist(name):
-    """Returns the ID of the playlist with this name or something close enough
-    to it, if it's in the playlist cache. Returns None if no such ID found."""
-    playlists = {}  # name: id
-    for filename in CATEGORIES.keys():
-        group = CachedPlaylistGroup.from_filename(filename)
-        playlists.update({playlist.name: playlist for playlist in group})
-
-    matches = difflib.get_close_matches(name, playlists.keys(), n=1, cutoff=0.5)
-    if len(matches) == 0:
-        return None
-
-    return playlists[matches[0]]
 
 def get_tracks_info(items):
     items = list(items)
@@ -67,19 +51,7 @@ tempo_playlists = CachedPlaylistGroup.from_filename('tempo.json')
 genre_playlists = CachedPlaylistGroup.from_filename('genre.json')
 sp = get_spotify_object(args.tekore_cfg)
 
-
-cached_playlist = find_cached_playlist(args.playlist)
-playlist_id_from_uri = parse_potential_uri(args.playlist)
-if cached_playlist:
-    playlist_id = cached_playlist.id
-elif playlist_id_from_uri:
-    playlist_id = playlist_id_from_uri
-else:
-    print("\033[0;33mCouldn't find in the playlist cache, and this doesn't look like a playlist ID either:\033[0m")
-    print("    " + args.playlist)
-    exit(1)
-
-
+playlist_id = parse_playlist_arg(args.playlist)
 playlist = sp.playlist(playlist_id)
 print(f"\033[1;36mGetting playlist: {playlist.name}\033[0;36m [{playlist.id}]\033[0m")
 
