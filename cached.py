@@ -46,6 +46,9 @@ class CachedPlaylistGroup:
     def __init__(self):
         self.playlists = []
 
+    def __iter__(self):
+        return iter(self.playlists)
+
     @classmethod
     def from_filename(cls, filename):
         fp = open(filename)

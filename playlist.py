@@ -1,6 +1,7 @@
 """Retrieves and displays a given Spotify playlist with relevant additional data."""
 
 import argparse
+import difflib
 import json
 import tekore
 
@@ -21,15 +22,18 @@ args = parser.parse_args()
 
 
 def find_cached_playlist(name):
-    """Returns the ID of the playlist with this name, if it's in the playlist
-    cache. Returns None if no such ID found."""
+    """Returns the ID of the playlist with this name or something close enough
+    to it, if it's in the playlist cache. Returns None if no such ID found."""
+    playlists = {}  # name: id
     for filename in CATEGORIES.keys():
         group = CachedPlaylistGroup.from_filename(filename)
-        playlist = group.playlist_by_name(name)
-        if playlist:
-            return playlist
-    else:
+        playlists.update({playlist.name: playlist for playlist in group})
+
+    matches = difflib.get_close_matches(name, playlists.keys(), n=1, cutoff=0.5)
+    if len(matches) == 0:
         return None
+
+    return playlists[matches[0]]
 
 def get_tracks_info(items):
     items = list(items)
