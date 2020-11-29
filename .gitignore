@@ -8,5 +8,4 @@ status.json
 
 client.py
 tekore.cfg
-google-credentials.json
-token.pickle
+
