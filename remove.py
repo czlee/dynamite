@@ -25,10 +25,6 @@ sp = get_spotify_object(args.tekore_cfg)
 removed_playlist = sp.playlist(REMOVED_PLAYLIST_ID)
 assert removed_playlist.name == REMOVED_PLAYLIST_NAME
 
-all_playlist = sp.playlist(ALL_PLAYLIST_ID)
-assert all_playlist.name == ALL_PLAYLIST_NAME
-
-
 removed_items = list(sp.all_items(removed_playlist.tracks))
 removed_track_ids = {item.track.id for item in removed_items}
 removed_track_playlists = {track_id: [] for track_id in removed_track_ids}
@@ -38,7 +34,7 @@ def handle_playlist(playlist_id, playlist_name):
     playlist = sp.playlist(playlist_id)
     if playlist_name != playlist.name:
         print(f"Playlist names don't match: expected name {playlist_name}, actual name {playlist.name}")
-        return
+        exit(1)
 
     print(" " * 80, end="\r")
     print(f"Checking playlist: {playlist_name}...", end="\r")
@@ -54,7 +50,7 @@ def handle_playlist(playlist_id, playlist_name):
         removed_track_playlists[track_id].append((playlist_id, playlist_name))
 
     if args.confirm_remove:
-        sp.playlist_remove(playlist_id, found_in_playlist)
+        sp.playlist_remove(playlist_id, ["spotify:track:" + track_id for track_id in found_in_playlist])
 
 def log_output(message):
     print(message)

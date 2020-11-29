@@ -6,7 +6,7 @@ import json
 import tekore
 
 from categories import CATEGORIES
-from cached import CachedPlaylist
+from cached import CachedPlaylist, CachedPlaylistGroup
 from utils import get_spotify_object
 
 
@@ -21,7 +21,7 @@ playlist_items = sp.all_items(sp.followed_playlists())
 playlists_by_name = {item.name: item for item in playlist_items if item.owner.id == user.id}
 
 for name, playlist_names in CATEGORIES.items():
-    objs = []
+    group = CachedPlaylistGroup()
 
     for playlist_name in playlist_names:
         try:
@@ -33,8 +33,8 @@ for name, playlist_names in CATEGORIES.items():
         print(f"Working on [{playlist.id}] {playlist.name}...")
 
         obj = CachedPlaylist.from_tekore_playlist(playlist, sp)
-        objs.append(obj.serialize())
+        group.add_playlist(obj)
 
     fp = open(name, 'w')
-    json.dump(objs, fp, indent=2)
+    json.dump(group.serialize(), fp, indent=2)
     fp.close()

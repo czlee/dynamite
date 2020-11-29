@@ -52,20 +52,26 @@ def format_release_date(release_date, precision='year'):
     return release_date[:length].ljust(length)
 
 
+def clip_tempo(tempo):
+    if tempo < 60:
+        return tempo * 2
+    elif tempo > 140:
+        return tempo / 2
+    else:
+        return tempo
+
+
 def format_tempo(tempo, clip=True):
     """Formats tempo by doubling apparently slow tempos and halving apparently
     fast ones so that it looks between 60 and 140, and marks adjusted tempos.
     Returns a string padded on the right by a space or indicator character."""
     if not clip:
-        return f"{tempo:3.0f} "
-    if tempo < 60:
-        tempo *= 2
-        return f"{tempo:3.0f}↑"
-    elif tempo > 140:
-        tempo /= 2
-        return f"{tempo:3.0f}↓"
+        clipped = tempo
+        suffix = " "
     else:
-        return f"{tempo:3.0f} "
+        clipped = clip_tempo(tempo)
+        suffix = "↑" if clipped > tempo else "↓" if clipped < tempo else " "
+    return f"{clipped:3.0f}{suffix}"
 
 
 def format_artists(artists):

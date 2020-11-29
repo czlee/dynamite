@@ -3,6 +3,8 @@
 import json
 from typing import List
 
+from categories import CATEGORIES
+
 
 class CachedPlaylist:
 
@@ -14,6 +16,13 @@ class CachedPlaylist:
         self.id = playlist_id
         self.name = name
         self.track_ids = []
+
+    @classmethod
+    def from_playlist_id(cls, playlist_id, spotify, expected_name=None):
+        playlist = spotify.playlist(playlist_id)
+        if expected_name and expected_name != playlist.name:
+            raise RuntimeError("Expected playlist name {expected_name}, but actual name is {playlist.name}")
+        return cls.from_tekore_playlist(playlist, spotify)
 
     @classmethod
     def from_tekore_playlist(cls, playlist, spotify):
@@ -30,6 +39,15 @@ class CachedPlaylist:
         obj = cls(data['id'], data['name'])
         obj.track_ids = data['track_ids']
         return obj
+
+    def contains_track(self, track):
+        return self.contains_track_id(track.id)
+
+    def contains_track_id(self, track_id):
+        return track_id in self.track_ids
+
+    def add_track_id(self, track_id):
+        self.track_ids.append(track_id)
 
     def serialize(self):
         return {
@@ -49,18 +67,25 @@ class CachedPlaylistGroup:
     def __iter__(self):
         return iter(self.playlists)
 
+    def add_from_filename(self, filename):
+        fp = open(filename)
+        self.add_from_file(fp)
+        fp.close()
+
+    def add_from_file(self, fp):
+        objs = json.load(fp)
+        self.playlists.extend(CachedPlaylist.from_cached_dict(obj) for obj in objs)
+
     @classmethod
     def from_filename(cls, filename):
-        fp = open(filename)
-        group = cls.from_file(fp)
-        fp.close()
+        group = cls()
+        group.add_from_filename(filename)
         return group
 
     @classmethod
     def from_file(cls, fp):
-        objs = json.load(fp)
         group = cls()
-        group.playlists = [CachedPlaylist.from_cached_dict(obj) for obj in objs]
+        group.add_from_file(fp)
         return group
 
     def playlists_containing_track(self, track_id):
@@ -86,3 +111,15 @@ class CachedPlaylistGroup:
         else:
             return None
 
+    def add_playlist(self, playlist):
+        self.playlists.append(playlist)
+
+    def serialize(self):
+        return [obj.serialize() for obj in self.playlists]
+
+
+def all_cached_playlists():
+    group = CachedPlaylistGroup()
+    for filename in CATEGORIES.keys():
+        group.add_from_filename(filename)
+    return group
