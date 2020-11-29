@@ -1,5 +1,6 @@
 import tekore
 import os.path
+import re
 
 try:
     from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SPOTIFY_USERNAME
@@ -64,3 +65,8 @@ def format_tempo(tempo, clip=True):
 
 def format_artists(artists):
     return ", ".join(artist.name for artist in artists)
+
+
+def looks_like_uri(string):
+    match = re.match(r'[0-9A-Za-z]{22}', string[-22:])
+    return match is not None

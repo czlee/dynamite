@@ -2,10 +2,10 @@
 
 import argparse
 import json
-import re
 import tekore
 
-from utils import format_artists, format_release_date, format_tempo, get_spotify_object
+from categories import CATEGORIES
+from utils import format_artists, format_release_date, format_tempo, get_spotify_object, looks_like_uri
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
@@ -27,8 +27,8 @@ sp = get_spotify_object(args.tekore_cfg)
 def find_cached_playlist(name):
     """Returns the ID of the playlist with this name, if it's in the playlist
     cache. Returns None if no such ID found."""
-    for category in ['genre', 'tempo', 'status', 'special']:
-        fp = open(category + '.json')
+    for filename in CATEGORIES.keys():
+        fp = open(filename)
         objs = json.load(fp)
         fp.close()
         for obj in objs:
@@ -47,26 +47,23 @@ def find_playlists(playlists, track_id, exclude_id=None):
     return names
 
 def get_tracks_info(items, playlist_id):
-    infos = []
-
     items = list(items)
     track_ids = [item.track.id for item in items if item.track.id is not None]
     with sp.chunked(True):
         features = sp.tracks_audio_features(track_ids)
     features_by_track_id = {feature.id: feature for feature in features}
 
+    infos = []
     for item in items:
         track = item.track
-        info = get_track_info(track, playlist_id)
-
+        info = format_track_info(track, playlist_id)
         features = features_by_track_id.get(track.id)
         info['tempo'] = format_tempo(features.tempo, clip=args.bpm_clip) if features else "-"
-
         infos.append(info)
 
     return infos
 
-def get_track_info(track, playlist_id=None):
+def format_track_info(track, playlist_id=None):
     info = {
         'name': track.name,
         'artist': format_artists(track.artists),
@@ -79,7 +76,7 @@ def get_track_info(track, playlist_id=None):
 
 playlist_id = find_cached_playlist(args.playlist)
 if playlist_id is None:
-    if re.match(r'[0-9A-Za-z]{22}', args.playlist[-22:]):
+    if looks_like_uri(args.playlist):
         playlist_id = args.playlist
     else:
         print("Couldn't find in the playlist cache, and this doesn't look like a playlist ID either:")
