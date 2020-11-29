@@ -4,8 +4,9 @@ import argparse
 import itertools
 import json
 import tekore
-from categories import CATEGORIES
 
+from categories import CATEGORIES
+from cached import CachedPlaylist
 from utils import get_spotify_object
 
 
@@ -16,40 +17,23 @@ args = parser.parse_args()
 
 sp = get_spotify_object(args.tekore_cfg, scope=tekore.scope.playlist_read_private)
 user = sp.current_user()
-
-def compile_playlists(playlist_items):
-    playlists = {}  # name: id
-    for item in playlist_items:
-        if item.owner.id != user.id:
-            continue
-        playlists[item.name] = item.id
-    return playlists
-
-def compile_track_ids(items, track_ids):
-    track_ids.extend(item.track.id for item in items if item.track.id is not None)
-
-playlist_items = sp.all_items(sp.playlists(user.id))
-playlists = compile_playlists(playlist_items)
+playlist_items = sp.all_items(sp.followed_playlists())
+playlists_by_name = {item.name: item for item in playlist_items if item.owner.id == user.id}
 
 for name, playlist_names in CATEGORIES.items():
     objs = []
 
     for playlist_name in playlist_names:
         try:
-            playlist_id = playlists[playlist_name]
+            playlist = playlists_by_name[playlist_name]
         except KeyError:
-            print("Warning: no playlist called '{}' found".format(playlist_name))
+            print(f"Warning: no playlist called '{playlist_name}' found")
             continue
 
-        print("Working on [{}] {}...".format(playlist_id, playlist_name))
+        print(f"Working on [{playlist.id}] {playlist.name}...")
 
-        obj =  {'id': playlist_id, 'name': playlist_name}
-        track_ids = []
-        items = sp.all_items(sp.playlist_items(playlist_id))
-        compile_track_ids(items, track_ids)
-        obj['track_ids'] = track_ids
-
-        objs.append(obj)
+        obj = CachedPlaylist.from_tekore_playlist(playlist, sp)
+        objs.append(obj.serialize())
 
     fp = open(name, 'w')
     json.dump(objs, fp, indent=2)

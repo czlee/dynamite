@@ -5,7 +5,8 @@ import json
 import tekore
 
 from categories import CATEGORIES
-from utils import format_artists, format_release_date, format_tempo, get_spotify_object, looks_like_uri
+from cached import CachedPlaylistGroup
+from utils import format_artists, format_release_date, format_tempo, get_spotify_object, parse_potential_uri
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
@@ -18,35 +19,19 @@ parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
     help="File to use to store Tekore (Spotify) user token")
 args = parser.parse_args()
 
-tempo_playlists = json.load(open('tempo.json'))
-genre_playlists = json.load(open('genre.json'))
-
-sp = get_spotify_object(args.tekore_cfg)
-
 
 def find_cached_playlist(name):
     """Returns the ID of the playlist with this name, if it's in the playlist
     cache. Returns None if no such ID found."""
     for filename in CATEGORIES.keys():
-        fp = open(filename)
-        objs = json.load(fp)
-        fp.close()
-        for obj in objs:
-            if "WCS " + name == obj['name'] or name == obj['name']:
-                return obj['id']
-    return None
+        group = CachedPlaylistGroup.from_filename(filename)
+        playlist = group.playlist_by_name(name)
+        if playlist:
+            return playlist
+    else:
+        return None
 
-def find_playlists(playlists, track_id, exclude_id=None):
-    names = []
-    for playlist in playlists:
-        if playlist['id'] == exclude_id:
-            continue
-        if track_id in playlist['track_ids']:
-            name = playlist['name'][4:] if playlist['name'].startswith("WCS ") else playlist['name']
-            names.append(name)
-    return names
-
-def get_tracks_info(items, playlist_id):
+def get_tracks_info(items):
     items = list(items)
     track_ids = [item.track.id for item in items if item.track.id is not None]
     with sp.chunked(True):
@@ -56,40 +41,50 @@ def get_tracks_info(items, playlist_id):
     infos = []
     for item in items:
         track = item.track
-        info = format_track_info(track, playlist_id)
+        info = format_track_info(track)
         features = features_by_track_id.get(track.id)
-        info['tempo'] = format_tempo(features.tempo, clip=args.bpm_clip) if features else "-"
+        info['tempo'] = format_tempo(features.tempo, clip=args.bpm_clip) if features else "- "
         infos.append(info)
 
     return infos
 
-def format_track_info(track, playlist_id=None):
+def format_track_info(track):
     info = {
         'name': track.name,
         'artist': format_artists(track.artists),
-        'tempo_range': " ".join(find_playlists(tempo_playlists, track.id)),
+        'tempo_range': tempo_playlists.playlists_containing_track_str(track.id, sep=" "),
         'release': format_release_date(track.album.release_date, args.release_date_precision),
-        'genres': ", ".join(find_playlists(genre_playlists, track.id, exclude_id=playlist_id)),
+        'genres': genre_playlists.playlists_containing_track_str(track.id),
     }
     return info
 
 
-playlist_id = find_cached_playlist(args.playlist)
-if playlist_id is None:
-    if looks_like_uri(args.playlist):
-        playlist_id = args.playlist
-    else:
-        print("Couldn't find in the playlist cache, and this doesn't look like a playlist ID either:")
-        print("    " + args.playlist)
-        exit(1)
+tempo_playlists = CachedPlaylistGroup.from_filename('tempo.json')
+genre_playlists = CachedPlaylistGroup.from_filename('genre.json')
+sp = get_spotify_object(args.tekore_cfg)
+
+
+cached_playlist = find_cached_playlist(args.playlist)
+playlist_id_from_uri = parse_potential_uri(args.playlist)
+if cached_playlist:
+    playlist_id = cached_playlist.id
+elif playlist_id_from_uri:
+    playlist_id = playlist_id_from_uri
+else:
+    print("\033[0;33mCouldn't find in the playlist cache, and this doesn't look like a playlist ID either:\033[0m")
+    print("    " + args.playlist)
+    exit(1)
+
 
 playlist = sp.playlist(playlist_id)
-print("\033[1;36mGetting playlist:", playlist.name, "\033[0m")
+print(f"\033[1;36mGetting playlist: {playlist.name}\033[0;36m [{playlist.id}]\033[0m")
+
+genre_playlists.remove_playlist(playlist.id)  # don't print the playlist that applies to all of them
 
 items = sp.all_items(playlist.tracks)
-infos = get_tracks_info(items, playlist_id)
+infos = get_tracks_info(items)
 
 for i, info in enumerate(infos, start=1):
     print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
-          f"{info['tempo_range']:>6s} {info['tempo']:s}| "
+          f"{info['tempo_range']:>6s} {info['tempo']:>4s}| "
           f"{info['release']:^4s} | {info['genres']:s}")

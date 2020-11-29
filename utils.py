@@ -67,6 +67,8 @@ def format_artists(artists):
     return ", ".join(artist.name for artist in artists)
 
 
-def looks_like_uri(string):
-    match = re.match(r'[0-9A-Za-z]{22}', string[-22:])
-    return match is not None
+def parse_potential_uri(string):
+    match = re.match(r'(?:spotify\:[a-z]+\:)?([0-9A-Za-z]{22})', string)
+    if match:
+        return match.group(1)
+    return None
