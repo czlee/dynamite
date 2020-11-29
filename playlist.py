@@ -5,7 +5,7 @@ import json
 import re
 import tekore
 
-from utils import get_spotify_object
+from utils import format_artists, format_release_date, format_tempo, get_spotify_object
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
@@ -36,30 +36,6 @@ def find_cached_playlist(name):
                 return obj['id']
     return None
 
-def format_release_date(release_date, precision=args.release_date_precision):
-    """Formats release date with precision specified (to the year, month or day).
-    If the release date lacks that precision, pads with spaces to get to the
-    appropriate width."""
-    length = {'year': 4, 'month': 7, 'day': 10}[precision]
-    if release_date is None:
-        return '-'.ljust(length)
-    return release_date[:length].ljust(length)
-
-def format_tempo(tempo):
-    """Formats tempo by doubling apparently slow tempos and halving apparently
-    fast ones so that it looks between 60 and 140, and marks adjusted tempos.
-    Returns a string padded on the right by a space or indicator character."""
-    if not args.bpm_clip:
-        return f"{tempo:3.0f} "
-    if tempo < 60:
-        tempo *= 2
-        return f"{tempo:3.0f}↑"
-    elif tempo > 140:
-        tempo /= 2
-        return f"{tempo:3.0f}↓"
-    else:
-        return f"{tempo:3.0f} "
-
 def find_playlists(playlists, track_id, exclude_id=None):
     names = []
     for playlist in playlists:
@@ -84,7 +60,7 @@ def get_tracks_info(items, playlist_id):
         info = get_track_info(track, playlist_id)
 
         features = features_by_track_id.get(track.id)
-        info['tempo'] = format_tempo(features.tempo) if features else "-"
+        info['tempo'] = format_tempo(features.tempo, clip=args.bpm_clip) if features else "-"
 
         infos.append(info)
 
@@ -93,9 +69,9 @@ def get_tracks_info(items, playlist_id):
 def get_track_info(track, playlist_id=None):
     info = {
         'name': track.name,
-        'artist': ", ".join(artist.name for artist in track.artists),
+        'artist': format_artists(track.artists),
         'tempo_range': " ".join(find_playlists(tempo_playlists, track.id)),
-        'release': format_release_date(track.album.release_date),
+        'release': format_release_date(track.album.release_date, args.release_date_precision),
         'genres': ", ".join(find_playlists(genre_playlists, track.id, exclude_id=playlist_id)),
     }
     return info

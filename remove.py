@@ -8,7 +8,7 @@ import json
 import datetime
 from categories import CATEGORIES
 
-from utils import get_spotify_object
+from utils import format_artists, get_spotify_object
 from client import REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 
 parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
@@ -79,7 +79,7 @@ for item in removed_items:
     log_output("{remove_string} [{track_id}] \"{name}\" ({artist}), which was in:".format(
         remove_string=remove_string,
         name=item.track.name,
-        artist=", ".join(artist.name for artist in item.track.artists),
+        artist=format_artists(item.track.artists),
         track_id=item.track.id,
     ))
     for playlist_id, playlist_name in removed_track_playlists[item.track.id]:
