@@ -1,4 +1,4 @@
-git+https://github.com/czlee/spotipy.git
+tekore
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib

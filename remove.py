@@ -5,60 +5,46 @@ actually remove the tracks."""
 
 import argparse
 import json
-import spotipy
 import datetime
 from categories import CATEGORIES
 
-try:
-    from client import (CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SPOTIFY_USERNAME,
-                        REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID,
-                        ALL_PLAYLIST_NAME)
-except ImportError:
-    print("Error: Before using this, copy client.example to client.py and fill in its blanks")
-    exit(1)
+from utils import get_spotify_object
+from client import REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 
 parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
-parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
-    help=f"Username of Spotify account to use. (default: {SPOTIFY_USERNAME})")
 parser.add_argument('--confirm-remove', action='store_true', default=False,
     help="Actually remove the tracks")
 parser.add_argument('--output-file', '-O', default='removed.log', type=argparse.FileType('a'),
     help="Record removed tracks here (used only if --confirm-remove specified)")
+parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
+    help="File to use to store Tekore (Spotify) user token")
 args = parser.parse_args()
 
-username = args.username
-token = spotipy.prompt_for_user_token(username=username, client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
-if not token:
-    print("Can't get token for", username)
-    exit(1)
-sp = spotipy.Spotify(auth=token)
+sp = get_spotify_object(args.tekore_cfg)
 
-removed_playlist = sp.user_playlist(username, REMOVED_PLAYLIST_ID)
-assert removed_playlist['name'] == REMOVED_PLAYLIST_NAME
+removed_playlist = sp.playlist(REMOVED_PLAYLIST_ID)
+assert removed_playlist.name == REMOVED_PLAYLIST_NAME
 
-all_playlist = sp.user_playlist(username, ALL_PLAYLIST_ID)
-assert all_playlist['name'] == ALL_PLAYLIST_NAME
+all_playlist = sp.playlist(ALL_PLAYLIST_ID)
+assert all_playlist.name == ALL_PLAYLIST_NAME
 
-removed_track_result = sp.user_playlist_tracks(username, REMOVED_PLAYLIST_ID)
-removed_track_data = {x['track']['id']: {
-        'name': x['track']['name'],
-        'artist': ", ".join(x['name'] for x in x['track']['artists']),
-    } for x in removed_track_result['items']}
-removed_track_ids = set(removed_track_data.keys())
+
+removed_items = list(sp.all_items(removed_playlist.tracks))
+removed_track_ids = {item.track.id for item in removed_items}
 removed_track_playlists = {track_id: [] for track_id in removed_track_ids}
 
+
 def handle_playlist(playlist_id, playlist_name):
-    actual_name = sp.user_playlist(username, playlist_id)['name']
-    if playlist_name != actual_name:
-        print(f"Playlist names don't match: expected name {playlist_name}, actual name {actual_name}")
+    playlist = sp.playlist(playlist_id)
+    if playlist_name != playlist.name:
+        print(f"Playlist names don't match: expected name {playlist_name}, actual name {playlist.name}")
         return
 
     print(" " * 80, end="\r")
     print(f"Checking playlist: {playlist_name}...", end="\r")
 
-    result = sp.user_playlist_tracks(username, playlist_id)
-    playlist_track_ids = {x['track']['id'] for x in result['items']}
+    playlist_items = sp.all_items(playlist.tracks)
+    playlist_track_ids = {item.track.id for item in playlist_items}
     found_in_playlist = removed_track_ids & playlist_track_ids
 
     if not found_in_playlist:
@@ -68,7 +54,7 @@ def handle_playlist(playlist_id, playlist_name):
         removed_track_playlists[track_id].append((playlist_id, playlist_name))
 
     if args.confirm_remove:
-        sp.playlist_remove_all_occurrences_of_items(playlist_id, found_in_playlist)
+        sp.playlist_remove(playlist_id, found_in_playlist)
 
 def log_output(message):
     print(message)
@@ -85,19 +71,19 @@ for filename in CATEGORIES.keys():
     for playlist in playlists:
         handle_playlist(playlist['id'], playlist['name'])
 
-for track_id, track_data in removed_track_data.items():
-    if len(removed_track_playlists[track_id]) == 0:
+for item in removed_items:
+    if len(removed_track_playlists[item.track.id]) == 0:
         continue
 
     remove_string = "Removed" if args.confirm_remove else "Would remove"
-    log_output("{remove_string} [spotify:track:{track_id}] \"{name}\" ({artist}), which was in:".format(
+    log_output("{remove_string} [{track_id}] \"{name}\" ({artist}), which was in:".format(
         remove_string=remove_string,
-        name=removed_track_data[track_id]['name'],
-        artist=removed_track_data[track_id]['artist'],
-        track_id=track_id,
+        name=item.track.name,
+        artist=", ".join(artist.name for artist in item.track.artists),
+        track_id=item.track.id,
     ))
-    for playlist_id, playlist_name in removed_track_playlists[track_id]:
-        log_output(f" - [spotify:playlist:{playlist_id}] {playlist_name}")
+    for playlist_id, playlist_name in removed_track_playlists[item.track.id]:
+        log_output(f" - [{playlist_id}] {playlist_name}")
 
 log_output("")
 

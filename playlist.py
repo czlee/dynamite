@@ -3,30 +3,25 @@
 import argparse
 import json
 import re
-import spotipy
-from utils import page
+import tekore
 
-try:
-    from client import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SPOTIFY_USERNAME
-except ImportError:
-    print("Error: Before using this, copy client.example to client.py and fill in its blanks")
-    exit(1)
+from utils import get_spotify_object
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
     help="Playlist to show, specify by either name or ID")
-parser.add_argument('--username', '-u', default=SPOTIFY_USERNAME,
-    help=f"Username of Spotify account to use. (default: {SPOTIFY_USERNAME})")
 parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
     help="Don't clip BPMs to be between 60 and 140")
 parser.add_argument('--release-date-precision', '-r', default='year', choices=['year', 'month', 'day'],
-    help="Display release date to this level of precistion")
+    help="Display release date to this level of precision")
+parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
+    help="File to use to store Tekore (Spotify) user token")
 args = parser.parse_args()
-
-username = args.username
 
 tempo_playlists = json.load(open('tempo.json'))
 genre_playlists = json.load(open('genre.json'))
+
+sp = get_spotify_object(args.tekore_cfg)
 
 
 def find_cached_playlist(name):
@@ -40,13 +35,6 @@ def find_cached_playlist(name):
             if "WCS " + name == obj['name'] or name == obj['name']:
                 return obj['id']
     return None
-
-token = spotipy.prompt_for_user_token(username=username, client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI)
-if not token:
-    print("Can't get token for", username)
-    exit(1)
-sp = spotipy.Spotify(auth=token)
 
 def format_release_date(release_date, precision=args.release_date_precision):
     """Formats release date with precision specified (to the year, month or day).
@@ -82,33 +70,33 @@ def find_playlists(playlists, track_id, exclude_id=None):
             names.append(name)
     return names
 
-@page(sp)
-def get_tracks_info(result, playlist_id):
+def get_tracks_info(items, playlist_id):
     infos = []
 
-    items = result['items']
-    track_ids = [item['track']['id'] for item in items if item['track']['id'] is not None]
-    features_by_track_id = {feature['id']: feature for feature in sp.audio_features(track_ids)}
+    items = list(items)
+    track_ids = [item.track.id for item in items if item.track.id is not None]
+    with sp.chunked(True):
+        features = sp.tracks_audio_features(track_ids)
+    features_by_track_id = {feature.id: feature for feature in features}
 
     for item in items:
-        track = item['track']
-        features = features_by_track_id.get(track['id'])
-        info = get_track_info(track, features, playlist_id)
+        track = item.track
+        info = get_track_info(track, playlist_id)
+
+        features = features_by_track_id.get(track.id)
+        info['tempo'] = format_tempo(features.tempo) if features else "-"
+
         infos.append(info)
 
     return infos
 
-def get_track_info(track, features=None, playlist_id=None):
-    track_id = track['id']
-    if not features and track_id:
-        features = sp.audio_features(track_id)[0]
+def get_track_info(track, playlist_id=None):
     info = {
-        'name': track['name'],
-        'artist': ", ".join(x['name'] for x in track['artists']),
-        'tempo_range': " ".join(find_playlists(tempo_playlists, track_id)),
-        'tempo': format_tempo(features['tempo']) if features else "-",
-        'release': format_release_date(track['album']['release_date']),
-        'genres': ", ".join(find_playlists(genre_playlists, track_id, exclude_id=playlist_id)),
+        'name': track.name,
+        'artist': ", ".join(artist.name for artist in track.artists),
+        'tempo_range': " ".join(find_playlists(tempo_playlists, track.id)),
+        'release': format_release_date(track.album.release_date),
+        'genres': ", ".join(find_playlists(genre_playlists, track.id, exclude_id=playlist_id)),
     }
     return info
 
@@ -122,11 +110,11 @@ if playlist_id is None:
         print("    " + args.playlist)
         exit(1)
 
-playlist_name = sp.user_playlist(username, playlist_id)['name']
-print("\033[1;36mGetting playlist:", playlist_name, "\033[0m")
+playlist = sp.playlist(playlist_id)
+print("\033[1;36mGetting playlist:", playlist.name, "\033[0m")
 
-result = sp.user_playlist_tracks(username, playlist_id)
-infos = get_tracks_info(result, playlist_id)
+items = sp.all_items(playlist.tracks)
+infos = get_tracks_info(items, playlist_id)
 
 for i, info in enumerate(infos, start=1):
     print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
