@@ -30,6 +30,7 @@ GENRE_PLAYLISTS = [
     "WCS 1990s pop",
     "WCS 2000s pop",
     "WCS 2010s pop",
+    "WCS 2020s pop",
     "WCS European languages",
     "WCS European artists",
     "WCS Asian artists",
