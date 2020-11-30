@@ -18,13 +18,13 @@ from utils import clip_tempo, format_artists, get_spotify_object, get_yes_no_inp
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
-    help="File to use to store Tekore (Spotify) user token")
+    help="file to use to store Tekore (Spotify) user token")
 parser.add_argument("--playback-start", '-s', type=float, default=15,
-    help="Start playback this far through the song (default 15)")
+    help="start playback this far through the song (default 15)")
 parser.add_argument("--list", '-l', action='store_true', default=False,
-    help="List offending tracks, don't rectify")
+    help="list offending tracks, don't rectify")
 parser.add_argument("--skip-update-cache", '-v', action='store_false', default=True, dest='update_cache',
-    help="Skip updating the cache (use this if you ran update.py just now)")
+    help="skip updating the cache (use this if you ran update.py just now)")
 args = parser.parse_args()
 
 

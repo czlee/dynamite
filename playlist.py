@@ -9,13 +9,13 @@ from utils import format_artists, format_release_date, format_tempo, get_spotify
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
-    help="Playlist to show, specify by either name or ID")
+    help="playlist to show, specify by either name or ID")
 parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
-    help="Don't clip BPMs to be between 60 and 140")
+    help="don't clip BPMs to be between 60 and 140")
 parser.add_argument('--release-date-precision', '-r', default='year', choices=['year', 'month', 'day'],
-    help="Display release date to this level of precision")
+    help="display release date to this level of precision")
 parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
-    help="File to use to store Tekore (Spotify) user token")
+    help="file to use to store Tekore (Spotify) user token")
 args = parser.parse_args()
 
 
@@ -53,7 +53,7 @@ sp = get_spotify_object(args.tekore_cfg)
 
 playlist_id = parse_playlist_arg(args.playlist)
 playlist = sp.playlist(playlist_id)
-print(f"\033[1;36mGetting playlist: {playlist.name}\033[0;36m [{playlist.id}]\033[0m")
+print(f"\033[1;36mGetting playlist: {playlist.name}\033[0;36m spotify:playlist:{playlist.id}\033[0m")
 
 genre_playlists.remove_playlist(playlist.id)  # don't print the playlist that applies to all of them
 
@@ -61,6 +61,6 @@ items = sp.all_items(playlist.tracks)
 infos = get_tracks_info(items)
 
 for i, info in enumerate(infos, start=1):
-    print(f"{i:3d} | {info['name'][:35]:35s} | {info['artist'][:25]:25s} | "
-          f"{info['tempo_range']:>6s} {info['tempo']:>4s}| "
-          f"{info['release']:^4s} | {info['genres']:s}")
+    print(f"{i:3d} │ {info['name'][:35]:35s} │ {info['artist'][:25]:25s} │ "
+          f"{info['tempo_range']:>6s} {info['tempo']:>4s}│ "
+          f"{info['release']:^4s} │ {info['genres']:s}")

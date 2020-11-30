@@ -13,11 +13,11 @@ from client import REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID, 
 
 parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
 parser.add_argument('--confirm-remove', action='store_true', default=False,
-    help="Actually remove the tracks")
+    help="actually remove the tracks")
 parser.add_argument('--output-file', '-O', default='removed.log', type=argparse.FileType('a'),
-    help="Record removed tracks here (used only if --confirm-remove specified)")
+    help="record removed tracks here (used only if --confirm-remove specified)")
 parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
-    help="File to use to store Tekore (Spotify) user token")
+    help="file to use to store Tekore (Spotify) user token")
 args = parser.parse_args()
 
 sp = get_spotify_object(args.tekore_cfg)

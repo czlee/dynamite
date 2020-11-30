@@ -183,15 +183,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('playlist',
-        help="Playlist to sort, specify by either name or ID")
+        help="playlist to sort, specify by either name or ID")
     parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
-        help="File to use to store Tekore (Spotify) user token")
+        help="file to use to store Tekore (Spotify) user token")
     parser.add_argument("--playback-start", '-s', type=float, default=15,
-        help="Start playback this far through the song (default 15)")
+        help="start playback this far through the song (default 15)")
     parser.add_argument("--skip-sorted", '-q', action="store_true", default=False,
-        help="Don't prompt about songs that are already properly sorted")
+        help="don't prompt about songs that are already properly sorted")
     parser.add_argument("--remove-after-sort", action="store_true", default=False,
-        help="Remove the track from this playlist after it is sorted")
+        help="remove the track from this playlist after it is sorted")
     args = parser.parse_args()
 
     scope = tekore.Scope(tekore.scope.user_modify_playback_state, tekore.scope.playlist_modify_public)

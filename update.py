@@ -38,7 +38,7 @@ def update_cached_playlists(spotify):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
-        help="File to use to store Tekore (Spotify) user token")
+        help="file to use to store Tekore (Spotify) user token")
     args = parser.parse_args()
 
     spotify = get_spotify_object(args.tekore_cfg, scope=tekore.scope.playlist_read_private)
