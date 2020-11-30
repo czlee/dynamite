@@ -83,6 +83,13 @@ class CachedPlaylistGroup:
         return group
 
     @classmethod
+    def from_filenames(cls, filenames):
+        group = cls()
+        for filename in filenames:
+            group.add_from_filename(filename)
+        return group
+
+    @classmethod
     def from_file(cls, fp):
         group = cls()
         group.add_from_file(fp)
@@ -99,8 +106,15 @@ class CachedPlaylistGroup:
             names = [name[nchars:] if name.startswith(remove_prefix) else name for name in names]
         return sep.join(names)
 
+    def add_playlist(self, playlist):
+        self.playlists.append(playlist)
+
     def remove_playlist(self, playlist_id):
         self.playlists = [p for p in self.playlists if p.id != playlist_id]
+
+    def contains_playlist_id(self, playlist_id):
+        """Checks only the ID, not the entire object."""
+        return playlist_id in [p.id for p in self.playlists]
 
     def playlist_by_name(self, name, allow_prefix="WCS "):
         for playlist in self.playlists:
@@ -110,9 +124,6 @@ class CachedPlaylistGroup:
                 return playlist
         else:
             return None
-
-    def add_playlist(self, playlist):
-        self.playlists.append(playlist)
 
     def serialize(self):
         return [obj.serialize() for obj in self.playlists]
