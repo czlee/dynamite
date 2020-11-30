@@ -56,10 +56,10 @@ class PlaylistSorter:
     def sort_track(self, track, added_at=None):
         """Main entry point. Sorts the track.
         If `added_at` is provided, it should be the time the track was added."""
-        self.spotify.playback_start_tracks([track.id], position_ms=self.playback_start_position_ms)
         self.show_track_info(track, added_at)
         if self.check_existing_playlists(track):
             return
+        self.spotify.playback_start_tracks([track.id], position_ms=self.playback_start_position_ms)
         self.add_to_tempo_playlist(track)
         self.add_to_genre_playlist(track)
         self.add_to_wcs_all(track)
@@ -100,10 +100,10 @@ class PlaylistSorter:
         print(f" title: \033[1;36m{track.name}\033[0m")
         print(f"artist: \033[0;36m{format_artists(track.artists)}\033[0m")
         print(f" album: \033[0;36m{track.album.name}\033[0m")
-        print(f"\033[90mSpotify URI: spotify:track:{track.id}\033[0m")
-        print(f"album released: \033[1;36m{track.album.release_date}\033[0m")
+        print(f"\033[90mURI: spotify:track:{track.id}\033[0m")
+        print(f"released: \033[1;36m{track.album.release_date}\033[0m")
         if added_at:
-            print(f"added to playlist: {added_at.strftime('%Y-%m-%d')}")
+            print(f"added on: {added_at.strftime('%Y-%m-%d')}")
 
         features = self.spotify.track_audio_features(track.id)
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
