@@ -42,7 +42,7 @@ if args.update_cache:
     print("\033[1;36mUpdating the cache (skip this using the -v option)\033[0m")
     update_cached_playlists(sp)
 
-sorter = PlaylistSorter(sp, prompt_for_all=True, playback_start_position_ms=args.playback_start*1000)
+sorter = PlaylistSorter(sp, prompt_for_all=True, playback_start_position_ms=args.playback_start * 1000)
 
 # Collate all tracks in relevant list
 all_track_ids = set()

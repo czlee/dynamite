@@ -23,12 +23,13 @@ def update_cache(filename, playlists):
 class PlaylistSorter:
     """Common functions for scripts that involve sorting tracks."""
 
-    def __init__(self, spotify, prompt_for_all=False, playback_start_position_ms=15000):
+    def __init__(self, spotify, prompt_for_all=False, skip_sorted=False, playback_start_position_ms=15000):
         """`spotify` should be a tekore.Spotify object.
         `prompt_for_all` specifies whether the user should be prompted about whether to add
             the track to the all playlist."""
         self.spotify = spotify
         self.prompt_for_all = prompt_for_all
+        self.skip_sorted = skip_sorted
         self.playback_start_position_ms = playback_start_position_ms
         self.set_up_playlist_cache()
 
@@ -96,9 +97,9 @@ class PlaylistSorter:
 
     def show_track_info(self, track, added_at=None):
         """Prints detailed information about a track."""
-        print(f"\033[1;36m{track.name}")
-        print(f"\033[0;36m{format_artists(track.artists)}\033[0m")
-        print(f"album: \033[0;36m{track.album.name}\033[0m")
+        print(f" title: \033[1;36m{track.name}\033[0m")
+        print(f"artist: \033[0;36m{format_artists(track.artists)}\033[0m")
+        print(f" album: \033[0;36m{track.album.name}\033[0m")
         print(f"\033[90mSpotify URI: spotify:track:{track.id}\033[0m")
         print(f"album released: \033[1;36m{track.album.release_date}\033[0m")
         if added_at:
@@ -124,7 +125,7 @@ class PlaylistSorter:
             return False  # still got some sorting to do
 
         print("\033[0;33mLooks like this track is already fully sorted.\033[0m")
-        return not get_yes_no_input("Do you still want to sort this track?")
+        return self.skip_sorted or not get_yes_no_input("Do you still want to sort this track?")
 
     def _get_tempo_playlist_from_user_input(self, user_tempo):
         return self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}bpm") or self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}")
@@ -187,6 +188,8 @@ if __name__ == "__main__":
         help="File to use to store Tekore (Spotify) user token")
     parser.add_argument("--playback-start", '-s', type=float, default=15,
         help="Start playback this far through the song (default 15)")
+    parser.add_argument("--skip-sorted", '-q', action="store_true", default=False,
+        help="Don't prompt about songs that are already properly sorted")
     parser.add_argument("--remove-after-sort", action="store_true", default=False,
         help="Remove the track from this playlist after it is sorted")
     args = parser.parse_args()
@@ -200,7 +203,7 @@ if __name__ == "__main__":
     playlist = sp.playlist(playlist_id)
     print(f"\033[1;34mSorting playlist: {playlist.name}\033[0;34m [{playlist.id}]\033[0m\n")
 
-    sorter = PlaylistSorter(sp, playback_start_position_ms=args.playback_start*1000)
+    sorter = PlaylistSorter(sp, playback_start_position_ms=args.playback_start * 1000, skip_sorted=args.skip_sorted)
     sorter.all_cached_playlists.remove_playlist(playlist_id)
 
     items = sp.all_items(playlist.tracks)
