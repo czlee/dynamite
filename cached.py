@@ -17,6 +17,9 @@ class CachedPlaylist:
         self.name = name
         self.track_ids = []
 
+    def __len__(self):
+        return len(self.track_ids)
+
     @classmethod
     def from_playlist_id(cls, playlist_id, spotify, expected_name=None):
         playlist = spotify.playlist(playlist_id)
@@ -108,6 +111,9 @@ class CachedPlaylistGroup:
 
     def add_playlist(self, playlist):
         self.playlists.append(playlist)
+
+    def add_playlists(self, playlists):
+        self.playlists.extend(playlists)
 
     def remove_playlist(self, playlist_id):
         self.playlists = [p for p in self.playlists if p.id != playlist_id]

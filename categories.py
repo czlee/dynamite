@@ -55,6 +55,7 @@ SPECIAL_PLAYLISTS = [
     "WCS blues straight beat",
     "WCS songs to ask about",
     "WCS unfiled from J&J O'Rama 2019",
+    "WCS removed",
 ]
 
 CATEGORIES = {

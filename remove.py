@@ -65,6 +65,8 @@ handle_playlist(ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME)
 for filename in CATEGORIES.keys():
     playlists = json.load(open(filename))
     for playlist in playlists:
+        if playlist['id'] == REMOVED_PLAYLIST_ID:
+            continue
         handle_playlist(playlist['id'], playlist['name'])
 
 for item in removed_items:

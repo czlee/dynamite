@@ -131,7 +131,15 @@ def parse_playlist_arg(arg, exit_on_error=True):
 
     if exit_on_error:
         print("\033[0;33mCouldn't find in the playlist cache, and this doesn't look like a playlist ID either:\033[0m")
-        print("    " + args.playlist)
+        print("    " + arg)
         exit(1)
 
     return None
+
+
+def get_yes_no_input(prompt):
+    message = prompt + " [y/n] "
+    response = input(message)
+    while response not in ["y", "n", "yes", "n"]:
+        response = input("\033[0;33m✘ Huh?\033[0m Type [y]es or [n]o: ")
+    return response[0] == "y"
