@@ -23,12 +23,13 @@ def update_cache(filename, playlists):
 class PlaylistSorter:
     """Common functions for scripts that involve sorting tracks."""
 
-    def __init__(self, spotify, prompt_for_all=False):
+    def __init__(self, spotify, prompt_for_all=False, playback_start_position_ms=15000):
         """`spotify` should be a tekore.Spotify object.
         `prompt_for_all` specifies whether the user should be prompted about whether to add
             the track to the all playlist."""
         self.spotify = spotify
         self.prompt_for_all = prompt_for_all
+        self.playback_start_position_ms = playback_start_position_ms
         self.set_up_playlist_cache()
 
     def set_up_playlist_cache(self):
@@ -40,7 +41,10 @@ class PlaylistSorter:
         # A little hacky - make a CachedPlaylistGroup containing all the other
         # playlists. It's preferable to use the same playlists, so that the
         # CachedPlaylistGroups are in sync with each other, which is especially
-        # important when we update the cache.
+        # important when we update the cache. NOTE: Some scripts hack this a
+        # little after construction to get it to run particular checks, so this
+        # shouldn't automatically be kept "in sync" with the tempo and genre
+        # playlist groups.
         self.all_cached_playlists = cached.CachedPlaylistGroup()
         self.all_cached_playlists.add_playlists(self.tempo_playlists)
         self.all_cached_playlists.add_playlists(self.genre_playlists)
@@ -51,7 +55,7 @@ class PlaylistSorter:
     def sort_track(self, track, added_at=None):
         """Main entry point. Sorts the track.
         If `added_at` is provided, it should be the time the track was added."""
-        self.spotify.playback_start_tracks([track.id], position_ms=15000)
+        self.spotify.playback_start_tracks([track.id], position_ms=self.playback_start_position_ms)
         self.show_track_info(track, added_at)
         if self.check_existing_playlists(track):
             return
@@ -63,9 +67,9 @@ class PlaylistSorter:
         """Alternative entry point if the playlist item object is available."""
         self.sort_track(item.track, added_at=item.added_at)
 
-    def remove_item(self, playlist, item):
-        """Removes the item from the specified playlist."""
-        self.spotify.playlist_remove(playlist.id, ["spotify:track:" + item.track.id])
+    def remove_track(self, playlist, track):
+        """Removes the track from the specified playlist."""
+        self.spotify.playlist_remove(playlist.id, ["spotify:track:" + track.id])
         print(f"\033[0;31m←\033[0m removed from {playlist.name}")
 
     # Helper methods
@@ -96,7 +100,7 @@ class PlaylistSorter:
         print(f"\033[0;36m{format_artists(track.artists)}\033[0m")
         print(f"album: \033[0;36m{track.album.name}\033[0m")
         print(f"\033[90mSpotify URI: spotify:track:{track.id}\033[0m")
-        print(f"album released:    \033[1;36m{track.album.release_date}\033[0m")
+        print(f"album released: \033[1;36m{track.album.release_date}\033[0m")
         if added_at:
             print(f"added to playlist: {added_at.strftime('%Y-%m-%d')}")
 
@@ -126,20 +130,39 @@ class PlaylistSorter:
         return self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}bpm") or self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}")
 
     def add_to_tempo_playlist(self, track):
-        user_tempo = input("Which tempo list? ")
-        playlist = self._get_tempo_playlist_from_user_input(user_tempo)
-        while playlist is None and user_tempo not in ["s", "skip"]:
-            user_tempo = input("\033[0;33m✘ Invalid tempo.\033[0m Type 'skip' to skip, or pick a tempo list: ")
+        """Prompts user to add to tempo playlist. Can also remove from a tempo
+        playlist by typing in "remove from [90]bpm"."""
+
+        user_error = False
+        playlist = None
+        while playlist is None:
+            if user_error:
+                user_tempo = input("\033[0;33m✘ Invalid tempo.\033[0m Type 'skip' to skip, or pick a tempo list: ")
+            else:
+                user_tempo = input("Which tempo list? ")
+
+            # special cases
+            if user_tempo.startswith("remove from "):
+                remove_playlist = self._get_tempo_playlist_from_user_input(user_tempo[12:])
+                if remove_playlist:
+                    self.remove_track(remove_playlist, track)
+                    user_error = False
+                    continue
+
+            if user_tempo in ["s", "skip"]:
+                return
+
             playlist = self._get_tempo_playlist_from_user_input(user_tempo)
-        if user_tempo in ["s", "skip"]:
-            return
+            if playlist is None:
+                user_error = True
+
         self.check_then_add_to_playlist(playlist, track.id)
         update_cache('tempo.json', self.tempo_playlists)
 
     def add_to_genre_playlist(self, track):
         """The method name is a slight misnomer - it will actually accept any list."""
         genre = input("Which genre list? ")
-        while genre != "":
+        while genre not in ["", "s", "skip", "n", "no"]:
             playlist = self.all_cached_playlists.playlist_by_name(f"WCS {genre}")
             if playlist is None:
                 genre = input(f"\033[0;33m✘ Playlist \"WCS {genre}\" not found.\033[0m Try again? ")
@@ -162,6 +185,8 @@ if __name__ == "__main__":
         help="Playlist to sort, specify by either name or ID")
     parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
         help="File to use to store Tekore (Spotify) user token")
+    parser.add_argument("--playback-start", '-s', type=float, default=15,
+        help="Start playback this far through the song (default 15)")
     parser.add_argument("--remove-after-sort", action="store_true", default=False,
         help="Remove the track from this playlist after it is sorted")
     args = parser.parse_args()
@@ -175,12 +200,12 @@ if __name__ == "__main__":
     playlist = sp.playlist(playlist_id)
     print(f"\033[1;34mSorting playlist: {playlist.name}\033[0;34m [{playlist.id}]\033[0m\n")
 
-    sorter = PlaylistSorter(sp)
+    sorter = PlaylistSorter(sp, playback_start_position_ms=args.playback_start*1000)
     sorter.all_cached_playlists.remove_playlist(playlist_id)
 
     items = sp.all_items(playlist.tracks)
     for item in items:
         sorter.sort_item(item)
         if args.remove_after_sort:
-            sorter.remove_item(playlist, item)
+            sorter.remove_track(playlist, item.track)
         print() # blank line
