@@ -8,7 +8,7 @@ from categories import CATEGORIES
 from cached import CachedPlaylistGroup
 
 try:
-    from settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SPOTIFY_USERNAME
+    from settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 except ImportError:
     print("Error: Before using this, copy settings.example to settings.py and fill in its blanks")
     exit(1)

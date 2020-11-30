@@ -10,7 +10,6 @@ import cached
 import itertools
 import tekore
 
-from settings import ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 from update import update_cached_playlists
 from sort import PlaylistSorter
 from utils import clip_tempo, format_artists, get_spotify_object, get_yes_no_input
