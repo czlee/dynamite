@@ -13,7 +13,7 @@ import tekore
 import cached
 from categories import CATEGORIES
 from utils import clip_tempo, format_artists, get_spotify_object, get_yes_no_input, parse_playlist_arg
-from client import ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
+from settings import ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 
 
 def update_cache(filename, playlists):

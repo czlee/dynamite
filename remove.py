@@ -9,7 +9,7 @@ import datetime
 from categories import CATEGORIES
 
 from utils import format_artists, get_spotify_object
-from client import REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
+from settings import REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 
 parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
 parser.add_argument('--confirm-remove', action='store_true', default=False,
