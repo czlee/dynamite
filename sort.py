@@ -5,6 +5,7 @@ WCS genre playlists."""
 
 import argparse
 import datetime
+import itertools
 import json
 import tekore
 
@@ -108,6 +109,10 @@ class PlaylistSorter:
         features = self.spotify.track_audio_features(track.id)
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
         print(f"Spotify-reported tempo: \033[1;36m{features.tempo:.1f} bpm\033[0m, nearest list: {nearest_tempo_list}bpm")
+
+        artists = self.spotify.artists([artist.id for artist in track.artists])
+        genres = ", ".join(sorted(itertools.chain.from_iterable(artist.genres for artist in artists)))
+        print(f"artist genres: {genres}")
 
     def check_existing_playlists(self, track):
         """Checks whether this track is already in existing playlists. Returns
