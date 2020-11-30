@@ -7,6 +7,7 @@ import argparse
 import datetime
 import itertools
 import json
+import subprocess
 import tekore
 
 import cached
@@ -24,7 +25,7 @@ def update_cache(filename, playlists):
 class PlaylistSorter:
     """Common functions for scripts that involve sorting tracks."""
 
-    def __init__(self, spotify, prompt_for_all=False, skip_sorted=False, playback_start_position_ms=15000):
+    def __init__(self, spotify, prompt_for_all=False, skip_sorted=False, playback_start_position_ms=15000, browser=None):
         """`spotify` should be a tekore.Spotify object.
         `prompt_for_all` specifies whether the user should be prompted about whether to add
             the track to the all playlist."""
@@ -32,6 +33,7 @@ class PlaylistSorter:
         self.prompt_for_all = prompt_for_all
         self.skip_sorted = skip_sorted
         self.playback_start_position_ms = playback_start_position_ms
+        self.browser = browser
         self.set_up_playlist_cache()
 
     def set_up_playlist_cache(self):
@@ -167,8 +169,15 @@ class PlaylistSorter:
 
     def add_to_genre_playlist(self, track):
         """The method name is a slight misnomer - it will actually accept any list."""
-        genre = input("Which genre list? ")
+
+        genre = input("Which genre list? " + "['?' to search in browser] " if self.browser else "")
         while genre not in ["", "s", "skip", "n", "no"]:
+
+            if genre == "?" and self.browser:
+                self.start_browser_with_genre_search(track)
+                genre = input("Which genre list? ")
+                continue
+
             playlist = self.all_cached_playlists.playlist_by_name(f"WCS {genre}")
             if playlist is None:
                 genre = input(f"\033[0;33m✘ Playlist \"WCS {genre}\" not found.\033[0m Try again? ")
@@ -182,6 +191,16 @@ class PlaylistSorter:
         if response:
             self.check_then_add_to_playlist(self.all_playlist, track.id)
 
+    def start_browser_with_genre_search(self, track):
+        query = [track.name]
+        query.extend(artist.name for artist in track.artists)
+        query.append("genre")
+        query_str = " ".join(query)
+        query_str = query_str.replace(" ", "+")
+        query_str = query_str.replace("(", "")
+        query_str = query_str.replace(")", "")
+        search_url = "https://google.com/search?q=" + query_str
+        subprocess.run([self.browser, search_url])
 
 
 if __name__ == "__main__":
@@ -190,13 +209,15 @@ if __name__ == "__main__":
     parser.add_argument('playlist',
         help="playlist to sort, specify by either name or ID")
     parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
-        help="file to use to store Tekore (Spotify) user token")
+        help="file to use to store Tekore (Spotify) user token (default tekore.cfg)")
     parser.add_argument("--playback-start", '-s', type=float, default=15,
         help="start playback this far through the song (default 15)")
     parser.add_argument("--skip-sorted", '-q', action="store_true", default=False,
         help="don't prompt about songs that are already properly sorted")
     parser.add_argument("--remove-after-sort", action="store_true", default=False,
         help="remove the track from this playlist after it is sorted")
+    parser.add_argument("--browser", type=str, default="wslview",
+        help="browser to open searches in (default wslview)")
     args = parser.parse_args()
 
     scope = tekore.Scope(tekore.scope.user_modify_playback_state, tekore.scope.playlist_modify_public)
@@ -208,7 +229,11 @@ if __name__ == "__main__":
     playlist = sp.playlist(playlist_id)
     print(f"\033[1;34mSorting playlist: {playlist.name}\033[0;34m [{playlist.id}]\033[0m\n")
 
-    sorter = PlaylistSorter(sp, playback_start_position_ms=args.playback_start * 1000, skip_sorted=args.skip_sorted)
+    sorter = PlaylistSorter(sp,
+        playback_start_position_ms=args.playback_start * 1000,
+        skip_sorted=args.skip_sorted,
+        browser=args.browser
+    )
     sorter.all_cached_playlists.remove_playlist(playlist_id)
 
     items = sp.all_items(playlist.tracks)
