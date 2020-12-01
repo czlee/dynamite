@@ -23,16 +23,23 @@ def update_cache(filename, playlists):
     fp.close()
 
 
+class SkipTrack(Exception):
+    """Used to skip sorting this track."""
+    pass
+
+
 class PlaylistSorter:
     """Common functions for scripts that involve sorting tracks."""
 
-    def __init__(self, spotify, prompt_for_all=False, skip_sorted=False, playback_start_position_ms=15000, browser=None):
+    def __init__(self, spotify, prompt_for_all=False, if_already_sorted="prompt", playback_start_position_ms=15000, browser=None):
         """`spotify` should be a tekore.Spotify object.
         `prompt_for_all` specifies whether the user should be prompted about whether to add
             the track to the all playlist."""
         self.spotify = spotify
         self.prompt_for_all = prompt_for_all
-        self.skip_sorted = skip_sorted
+        self.if_already_sorted = if_already_sorted
+        if if_already_sorted not in ["prompt", "skip", "always"]:
+            raise ValueError(f"Invalid value for if_already_sorted: {if_already_sorted}")
         self.playback_start_position_ms = playback_start_position_ms
         self.browser = browser
         self.set_up_playlist_cache()
@@ -61,12 +68,14 @@ class PlaylistSorter:
         """Main entry point. Sorts the track.
         If `added_at` is provided, it should be the time the track was added."""
         self.show_track_info(track, added_at)
-        if self.check_existing_playlists(track):
-            return
-        self.spotify.playback_start_tracks([track.id], position_ms=self.playback_start_position_ms)
-        self.add_to_tempo_playlist(track)
-        self.add_to_genre_playlist(track)
-        self.add_to_wcs_all(track)
+        try:
+            self.check_existing_playlists(track)
+            self.spotify.playback_start_tracks([track.id], position_ms=self.playback_start_position_ms)
+            self.add_to_tempo_playlist(track)
+            self.add_to_genre_playlist(track)
+            self.add_to_wcs_all(track)
+        except SkipTrack:
+            print("\033[0;35m◁ Skipping this track\033[0m")
 
     def sort_item(self, item):
         """Alternative entry point if the playlist item object is available."""
@@ -118,22 +127,30 @@ class PlaylistSorter:
         print(f"artist genres: {genres}")
 
     def check_existing_playlists(self, track):
-        """Checks whether this track is already in existing playlists. Returns
-        True if it seems like this track is already fully sorted, False
-        otherwise."""
+        """Checks whether this track is already in existing playlists. Raises
+        SkipTrack if it seems like this track is already fully sorted, otherwise
+        returns None."""
         already_in = self.all_cached_playlists.playlists_containing_track(track.id)
         if not already_in:
-            return False  # in nothing, keep sorting
+            return
 
         print(f"\033[0;33mThis track is already in:\033[0m")
         for playlist in already_in:
             print(f" - {playlist.name}")
 
         if not self.is_track_properly_sorted(track.id):
-            return False  # still got some sorting to do
+            return
 
         print("\033[0;33mLooks like this track is already fully sorted.\033[0m")
-        return self.skip_sorted or not get_yes_no_input("Do you still want to sort this track?")
+        if self.if_already_sorted == "skip":
+            raise SkipTrack
+        elif self.if_already_sorted == "always":
+            return
+        elif self.if_already_sorted == "prompt":
+            if get_yes_no_input("Do you still want to sort this track?"):
+                return
+            else:
+                raise SkipTrack
 
     def _get_tempo_playlist_from_user_input(self, user_tempo):
         return self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}bpm") or self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}")
@@ -146,7 +163,7 @@ class PlaylistSorter:
         playlist = None
         while playlist is None:
             if user_error:
-                user_tempo = input("\033[0;33m✘ Invalid tempo.\033[0m Type 'skip' to skip, or pick a tempo list: ")
+                user_tempo = input("\033[0;33m✘ Invalid tempo.\033[0m Type [n]one, [s]kip, or pick a tempo list: ")
             else:
                 user_tempo = input("Which tempo list? ")
 
@@ -158,8 +175,11 @@ class PlaylistSorter:
                     user_error = False
                     continue
 
-            if user_tempo in ["s", "skip"]:
+            if user_tempo in ["n", "none"]:
                 return
+
+            if user_tempo in ["s", "skip"]:
+                raise SkipTrack
 
             playlist = self._get_tempo_playlist_from_user_input(user_tempo)
             if playlist is None:
@@ -178,6 +198,21 @@ class PlaylistSorter:
                 self.start_browser_with_genre_search(track)
                 genre = input("Which genre list? ")
                 continue
+
+            if genre == "pop":
+                release_year = int(track.album.release_date[:4])
+                if release_year < 1990:
+                    pop_playlist_name = "pre-1990s pop"
+                else:
+                    pop_playlist_name = f"{str(release_year // 10)}0s pop"
+                response = get_yes_no_input(f"\033[0;36m▷ Did you mean \"WCS {pop_playlist_name}\"?\033[0m")
+                if response:
+                    genre = pop_playlist_name
+                else:
+                    continue
+
+            if genre in ["s", "skip"]:
+                raise SkipTrack
 
             playlist = self.all_cached_playlists.playlist_by_name(f"WCS {genre}")
             if playlist is None:
@@ -211,12 +246,19 @@ if __name__ == "__main__":
         help="file to use to store Tekore (Spotify) user token (default tekore.cfg)")
     parser.add_argument("--playback-start", '-s', type=float, default=15,
         help="start playback this far through the song (default 15)")
-    parser.add_argument("--skip-sorted", '-q', action="store_true", default=False,
-        help="don't prompt about songs that are already properly sorted")
-    parser.add_argument("--remove-after-sort", action="store_true", default=False,
-        help="remove the track from this playlist after it is sorted")
     parser.add_argument("--browser", type=str, default="wslview",
         help="browser to open searches in (default wslview)")
+    parser.add_argument("--remove-after-sort", action="store_true", default=False,
+        help="remove the track from this playlist after it is sorted")
+
+    sort_prompting = parser.add_mutually_exclusive_group()
+    sort_prompting.add_argument("--force-sort", '-f', action="store_const", const="always",
+        dest="if_already_sorted", default="prompt",
+        help="sort all songs even if already properly sorted (rather than prompting)")
+    sort_prompting.add_argument("--skip-sorted", '-q', action="store_const", const="skip",
+        dest="if_already_sorted",
+        help="skip songs that are already properly sorted (rather than prompting)")
+
     args = parser.parse_args()
 
     scope = tekore.Scope(tekore.scope.user_modify_playback_state, tekore.scope.playlist_modify_public)
@@ -230,7 +272,7 @@ if __name__ == "__main__":
 
     sorter = PlaylistSorter(sp,
         playback_start_position_ms=args.playback_start * 1000,
-        skip_sorted=args.skip_sorted,
+        if_already_sorted=args.if_already_sorted,
         browser=args.browser
     )
     sorter.all_cached_playlists.remove_playlist(playlist_id)
