@@ -32,6 +32,7 @@ def get_tracks_info(items):
         info = format_track_info(track)
         features = features_by_track_id.get(track.id)
         info['tempo'] = format_tempo(features.tempo, clip=args.bpm_clip) if features else "- "
+        info['added_at'] = item.added_at
         infos.append(info)
 
     return infos
@@ -53,7 +54,7 @@ sp = get_spotify_object(args.tekore_cfg)
 
 playlist_id = parse_playlist_arg(args.playlist)
 playlist = sp.playlist(playlist_id)
-print(f"\033[1;36mGetting playlist: {playlist.name}\033[0;36m spotify:playlist:{playlist.id}\033[0m")
+print(f"\033[1;36m{playlist.name}\033[0;36m spotify:playlist:{playlist.id}\033[0m")
 
 genre_playlists.remove_playlist(playlist.id)  # don't print the playlist that applies to all of them
 
