@@ -8,6 +8,7 @@ import datetime
 import itertools
 import json
 import subprocess
+import urllib.parse
 import tekore
 
 import cached
@@ -196,9 +197,7 @@ class PlaylistSorter:
         query.extend(artist.name for artist in track.artists)
         query.append("genre")
         query_str = " ".join(query)
-        query_str = query_str.replace(" ", "+")
-        query_str = query_str.replace("(", "")
-        query_str = query_str.replace(")", "")
+        query_str = urllib.parse.quote_plus(query_str)
         search_url = "https://google.com/search?q=" + query_str
         subprocess.run([self.browser, search_url])
 
