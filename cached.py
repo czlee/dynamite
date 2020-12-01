@@ -24,7 +24,8 @@ class CachedPlaylist:
     def from_playlist_id(cls, playlist_id, spotify, expected_name=None):
         playlist = spotify.playlist(playlist_id)
         if expected_name and expected_name != playlist.name:
-            raise RuntimeError("Expected playlist name {expected_name}, but actual name is {playlist.name}")
+            raise RuntimeError("Expected playlist name {expected_name}, but "
+                               "actual name is {playlist.name}")
         return cls.from_tekore_playlist(playlist, spotify)
 
     @classmethod

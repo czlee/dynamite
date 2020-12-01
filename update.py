@@ -1,12 +1,12 @@
 """Updates the category playlist cache."""
 
 import argparse
-import itertools
 import json
+
 import tekore
 
-from categories import CATEGORIES
 from cached import CachedPlaylist, CachedPlaylistGroup
+from categories import CATEGORIES
 from utils import get_spotify_object
 
 

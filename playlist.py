@@ -1,11 +1,10 @@
 """Retrieves and displays a given Spotify playlist with relevant additional data."""
 
 import argparse
-import json
-import tekore
 
 from cached import CachedPlaylistGroup
-from utils import format_artists, format_release_date, format_tempo, get_spotify_object, parse_playlist_arg
+from utils import (format_artists, format_release_date, format_tempo,
+                   get_spotify_object, parse_playlist_arg)
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('playlist',
@@ -36,6 +35,7 @@ def get_tracks_info(items):
         infos.append(info)
 
     return infos
+
 
 def format_track_info(track):
     info = {

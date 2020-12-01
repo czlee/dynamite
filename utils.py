@@ -4,8 +4,8 @@ import re
 
 import tekore
 
-from categories import CATEGORIES
 from cached import CachedPlaylistGroup
+from categories import CATEGORIES
 
 try:
     from settings import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
@@ -35,9 +35,10 @@ def get_spotify_object(tekore_cfg_file, scope=None):
         token = tekore.prompt_for_user_token(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                 redirect_uri=REDIRECT_URI, scope=scope)
         if not token:
-            print("Can't get token for", username)
+            print("Couldn't get Spotify API token")
             exit(1)
-        tekore.config_to_file(tekore_cfg_file, (CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, token.refresh_token))
+        tekore.config_to_file(tekore_cfg_file,
+                (CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, token.refresh_token))
 
     return tekore.Spotify(token)
 
@@ -130,7 +131,8 @@ def parse_playlist_arg(arg, exit_on_error=True):
         return playlist_id_from_uri
 
     if exit_on_error:
-        print("\033[0;33mCouldn't find in the playlist cache, and this doesn't look like a playlist ID either:\033[0m")
+        print("\033[0;33mCouldn't find in the playlist cache, and this doesn't "
+              "look like a playlist ID either:\033[0m")
         print("    " + arg)
         exit(1)
 

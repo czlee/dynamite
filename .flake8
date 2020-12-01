@@ -1,0 +1,7 @@
+[flake8]
+max-line-length = 105
+ignore = E128
+exclude = venv
+import-order-style = edited
+application-import-names = cached, categories, settings, sort, update, utils
+

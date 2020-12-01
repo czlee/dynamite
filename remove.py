@@ -4,12 +4,12 @@ Runs a dry run (i.e. does not delete) by default. Use --confirm-remove to
 actually remove the tracks."""
 
 import argparse
-import json
 import datetime
-from categories import CATEGORIES
+import json
 
+from categories import CATEGORIES
+from settings import ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME, REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME
 from utils import format_artists, get_spotify_object
-from settings import REMOVED_PLAYLIST_ID, REMOVED_PLAYLIST_NAME, ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 
 parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
 parser.add_argument('--confirm-remove', action='store_true', default=False,
@@ -51,6 +51,7 @@ def handle_playlist(playlist_id, playlist_name):
 
     if args.confirm_remove:
         sp.playlist_remove(playlist_id, ["spotify:track:" + track_id for track_id in found_in_playlist])
+
 
 def log_output(message):
     print(message)

@@ -6,13 +6,13 @@ playlists.
 """
 
 import argparse
-import cached
 import itertools
+
 import tekore
 
-from update import update_cached_playlists
 from sort import PlaylistSorter
-from utils import clip_tempo, format_artists, get_spotify_object, get_yes_no_input
+from update import update_cached_playlists
+from utils import format_artists, get_spotify_object
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -36,6 +36,7 @@ def print_quick_info(track):
     names = ", ".join(names)
     print(f"- {track.name} \033[90m{format_artists(track.artists)} \033[0;34m{names}\033[0m")
 
+
 scope = tekore.Scope(tekore.scope.user_modify_playback_state, tekore.scope.playlist_modify_public)
 sp = get_spotify_object(args.tekore_cfg, scope=scope)
 
@@ -46,8 +47,7 @@ if args.update_cache:
 sorter = PlaylistSorter(sp,
     prompt_for_all=True,
     playback_start_position_ms=args.playback_start * 1000,
-    browser=args.browser
-)
+    browser=args.browser)
 
 # Collate all tracks in relevant list
 all_track_ids = set()
