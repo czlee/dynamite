@@ -68,15 +68,16 @@ class PlaylistSorter:
         """Main entry point. Sorts the track.
         If `added_at` is provided, it should be the time the track was added."""
         self.show_track_info(track, added_at)
-        try:
-            self.check_existing_playlists(track)
+        self.show_existing_playlists(track)
+        if self.check_if_want_to_sort(track):
             self.spotify.playback_start_tracks([track.id],
                 position_ms=self.playback_start_position_ms)
-            self.add_to_tempo_playlist(track)
-            self.add_to_genre_playlist(track)
-            self.add_to_wcs_all(track)
-        except SkipTrack:
-            print("\033[0;35m◁ Skipping this track\033[0m")
+            try:
+                self.add_to_tempo_playlist(track)
+                self.add_to_genre_playlist(track)
+                self.add_to_wcs_all(track)
+            except SkipTrack:
+                print("\033[0;35m◁ Skipping this track\033[0m")
 
     def sort_item(self, item):
         """Alternative entry point if the playlist item object is available."""
@@ -128,10 +129,9 @@ class PlaylistSorter:
         genres = ", ".join(sorted(itertools.chain.from_iterable(artist.genres for artist in artists)))
         print(f"artist genres: {genres}")
 
-    def check_existing_playlists(self, track):
-        """Checks whether this track is already in existing playlists. Raises
-        SkipTrack if it seems like this track is already fully sorted, otherwise
-        returns None."""
+    def show_existing_playlists(self, track):
+        """Shows a list of playlists this track is already in, among those in
+        `self.all_cached_playlists`. If it's in none, prints nothing."""
         already_in = self.all_cached_playlists.playlists_containing_track(track.id)
         if not already_in:
             return
@@ -140,19 +140,21 @@ class PlaylistSorter:
         for playlist in already_in:
             print(f" - {playlist.name}")
 
+    def check_if_want_to_sort(self, track):
+        """Checks whether we would want to sort this track. Returns True if the
+        track should be sorted, or False if it should be skipped. The track is
+        always skipped if properly sorted, otherwise either skips, sorts or
+        prompts the users, depending on the value of `if_already_sorted`."""
         if not self.is_track_properly_sorted(track.id):
-            return
+            return True
 
         print("\033[0;33mLooks like this track is already fully sorted.\033[0m")
         if self.if_already_sorted == "skip":
-            raise SkipTrack
+            return False
         elif self.if_already_sorted == "always":
-            return
+            return True
         elif self.if_already_sorted == "prompt":
-            if get_yes_no_input("Do you still want to sort this track?"):
-                return
-            else:
-                raise SkipTrack
+            return get_yes_no_input("Do you want to sort this track?")
 
     def _get_tempo_playlist_from_user_input(self, user_tempo):
         with_bpm = self.tempo_playlists.playlist_by_name(f"WCS {user_tempo}bpm")

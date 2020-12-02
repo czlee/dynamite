@@ -14,6 +14,11 @@ except ImportError:
     exit(1)
 
 
+class WrongUriType(Exception):
+    def __init__(self, uritype, expected):
+        super().__init__(f"Wrong URI type: {uritype} (expected: {expected})")
+
+
 def get_spotify_object(tekore_cfg_file, scope=None):
     token = None
 
@@ -79,21 +84,23 @@ def format_artists(artists):
     return ", ".join(artist.name for artist in artists)
 
 
-def parse_potential_uri(string):
+def parse_potential_uri(string, uritype=None):
     # plain ID
     match = re.match(r'[0-9A-Za-z]{22}', string)
     if match:
         return string
 
-    # Spotify URI
-    match = re.match(r'spotify\:[a-z]+\:([0-9A-Za-z]{22})', string)
-    if match:
-        return match.group(1)
-
-    # Spotify link
-    match = re.match(r'https://open.spotify.com/[a-z]+/([0-9A-Za-z]{22})', string)
-    if match:
-        return match.group(1)
+    # Spotify URI or link
+    uripatterns = [
+        r'spotify\:([a-z]+)\:([0-9A-Za-z]{22})',
+        r'https://open\.spotify\.com/([a-z]+)/([0-9A-Za-z]{22})',
+    ]
+    for pattern in uripatterns:
+        match = re.match(pattern, string)
+        if match:
+            if uritype and match.group(1) != uritype:
+                raise WrongUriType(match.group(1), uritype)
+            return match.group(2)
 
     return None
 
@@ -126,7 +133,15 @@ def parse_playlist_arg(arg, exit_on_error=True):
     if cached_playlist:
         return cached_playlist.id
 
-    playlist_id_from_uri = parse_potential_uri(arg)
+    try:
+        playlist_id_from_uri = parse_potential_uri(arg, uritype="playlist")
+    except WrongUriType as e:
+        if exit_on_error:
+            print("\033[0;33m" + str(e) + "\033[0m")
+            exit(1)
+        else:
+            return None
+
     if playlist_id_from_uri:
         return playlist_id_from_uri
 
