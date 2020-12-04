@@ -32,9 +32,17 @@ class PlaylistSorter:
 
     def __init__(self, spotify, prompt_for_all=False, if_already_sorted="prompt",
                  playback_start_position_ms=15000, browser=None):
-        """`spotify` should be a tekore.Spotify object.
-        `prompt_for_all` specifies whether the user should be prompted about whether to add
-            the track to the all playlist."""
+        """
+        `spotify` should be a tekore.Spotify object.
+        `prompt_for_all` specifies whether the user should be prompted about
+            whether to add the track to the all playlist.
+        `if_already_sorted` is one of three options specifying what to do if the
+            track is already fully sorted.
+        `playback_start_position_ms` is when playback should start in the track,
+            or `None` not to touch playback.
+        `browser` is the name of the browser to start for internet searches, or
+            `None` not to open a browser.
+        """
         self.spotify = spotify
         self.prompt_for_all = prompt_for_all
         self.if_already_sorted = if_already_sorted
@@ -70,8 +78,9 @@ class PlaylistSorter:
         self.show_track_info(track, added_at)
         self.show_existing_playlists(track)
         if self.check_if_want_to_sort(track):
-            self.spotify.playback_start_tracks([track.id],
-                position_ms=self.playback_start_position_ms)
+            if self.playback_start_position_ms is not None:
+                self.spotify.playback_start_tracks([track.id],
+                    position_ms=self.playback_start_position_ms)
             try:
                 self.add_to_tempo_playlist(track)
                 self.add_to_genre_playlist(track)
