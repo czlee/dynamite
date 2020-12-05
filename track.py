@@ -1,5 +1,4 @@
-"""Shows details for a given track (or the currently playing track), and offers
-to sort it if it's not fully sorted.
+"""Shows details for a given track (or the currently playing track).
 """
 
 import argparse
@@ -12,7 +11,7 @@ from utils import format_artists, get_spotify_object, parse_potential_uri, Wrong
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("track", nargs='?',
-    help="track, specified by URI or search terms")
+    help="track, specified by URI or search terms (gets currently playing track if omitted)")
 parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
     help="file to use to store Tekore (Spotify) user token (default tekore.cfg)")
 parser.add_argument("--browser", type=str, default="wslview",
