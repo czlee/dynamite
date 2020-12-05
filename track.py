@@ -17,6 +17,8 @@ parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
     help="file to use to store Tekore (Spotify) user token (default tekore.cfg)")
 parser.add_argument("--browser", type=str, default="wslview",
     help="browser to open searches in (default wslview)")
+parser.add_argument("--more-features", "-f", action="store_true", default=False,
+    help="show more of Spotify's audio features")
 parser.add_argument("--sort", action="store_true", default=False,
     help="sort the track")
 parser.add_argument("--verbose", "-v", action="store_true", default=False,
@@ -33,7 +35,8 @@ sp = get_spotify_object(args.tekore_cfg, scope=scope)
 sorter = PlaylistSorter(sp,
     prompt_for_all=True,
     browser=args.browser,
-    playback_start_position_ms=None)
+    playback_start_position_ms=None,
+    more_features=args.more_features)
 
 if args.track:
 

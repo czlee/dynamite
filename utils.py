@@ -14,6 +14,14 @@ except ImportError:
     exit(1)
 
 
+KEY_NAMES = [
+    ["C minor", "C♯ minor", "D minor", "E♭ minor", "E minor", "F minor",
+     "F♯ minor", "G minor", "G♯ minor", "A minor", "B♭ minor", "B minor"],
+    ["C major", "D♭ major", "D major", "E♭ major", "E major", "F major",
+     "F♯ major", "G major", "A♭ major", "A major", "B♭ major", "B major"],
+]
+
+
 class WrongUriType(Exception):
     def __init__(self, uritype, expected):
         super().__init__(f"Wrong URI type: {uritype} (expected: {expected})")
@@ -82,6 +90,20 @@ def format_tempo(tempo, clip=True):
 
 def format_artists(artists):
     return ", ".join(artist.name for artist in artists)
+
+
+def format_duration_ms(duration_ms):
+    duration_sec = int(round(duration_ms / 1000, 0))
+    minutes = duration_sec // 60
+    seconds = duration_sec % 60
+    return f"{minutes}:{seconds:02d}"
+
+
+def format_key(key, mode):
+    """`key`, `mode` are as returned by the Spotify audio features API."""
+    if key == -1:
+        return "unknown"
+    return KEY_NAMES[mode][key]
 
 
 def parse_potential_uri(string, uritype=None):

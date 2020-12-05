@@ -13,7 +13,8 @@ import tekore
 
 import cached
 from settings import ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
-from utils import clip_tempo, format_artists, get_spotify_object, get_yes_no_input, parse_playlist_arg
+from utils import (clip_tempo, format_artists, format_duration_ms, format_key,
+                   get_spotify_object, get_yes_no_input, parse_playlist_arg)
 
 
 def update_cache(filename, playlists):
@@ -31,7 +32,7 @@ class PlaylistSorter:
     """Common functions for scripts that involve sorting tracks."""
 
     def __init__(self, spotify, prompt_for_all=False, if_already_sorted="prompt",
-                 playback_start_position_ms=15000, browser=None):
+                 playback_start_position_ms=15000, browser=None, more_features=False):
         """
         `spotify` should be a tekore.Spotify object.
         `prompt_for_all` specifies whether the user should be prompted about
@@ -42,6 +43,7 @@ class PlaylistSorter:
             or `None` not to touch playback.
         `browser` is the name of the browser to start for internet searches, or
             `None` not to open a browser.
+        `more_features` is whether to print more audio features than just tempo.
         """
         self.spotify = spotify
         self.prompt_for_all = prompt_for_all
@@ -50,6 +52,7 @@ class PlaylistSorter:
             raise ValueError(f"Invalid value for if_already_sorted: {if_already_sorted}")
         self.playback_start_position_ms = playback_start_position_ms
         self.browser = browser
+        self.more_features = more_features
         self.set_up_playlist_cache()
 
     def set_up_playlist_cache(self):
@@ -133,6 +136,15 @@ class PlaylistSorter:
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
         print(f"Spotify-reported tempo: \033[1;36m{features.tempo:.1f} bpm\033[0m, "
               f"nearest list: {nearest_tempo_list}bpm")
+
+        if self.more_features:
+            key_name = format_key(features.key, features.mode)
+            print(f"\033[90mkey: {key_name}, time sig: {features.time_signature}, "
+                  f"duration: {format_duration_ms(features.duration_ms)}")
+            print(f"acoustic {features.acousticness}, danceable {features.danceability}, "
+                  f"energy {features.energy}, instrumental {features.instrumentalness}")
+            print(f"live {features.liveness}, loudness {features.loudness}, "
+                  f"speech {features.speechiness}, valence {features.valence}\033[0m")
 
         artists = self.spotify.artists([artist.id for artist in track.artists])
         genres = ", ".join(sorted(itertools.chain.from_iterable(artist.genres for artist in artists)))
