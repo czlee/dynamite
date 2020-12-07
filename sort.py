@@ -59,6 +59,7 @@ class PlaylistSorter:
         self.browser = browser
         self.more_features = more_features
         self.audio_features_cache = {}
+        self.artists_cache = {}
         self.set_up_playlist_cache()
 
     def set_up_playlist_cache(self):
@@ -81,10 +82,15 @@ class PlaylistSorter:
         self.all_cached_playlists.add_from_filename('status.json')
         self.all_cached_playlists.add_playlist(self.all_playlist)
 
-    def populate_audio_features_cache(self, track_ids):
+    def prefetch_tracks_info(self, tracks):
+        """Pre-fetch audio features and artists of many tracks."""
+        track_ids = [track.id for track in tracks]
+        artist_ids = [artist.id for track in tracks for artist in track.artists]
         with self.spotify.chunked(True):
             features = self.spotify.tracks_audio_features(track_ids)
+            artists = self.spotify.artists(artist_ids)
         self.audio_features_cache.update({feature.id: feature for feature in features})
+        self.artists_cache.update({artist.id: artist for artist in artists})
 
     def sort_track(self, track, added_at=None):
         """Main entry point. Sorts the track.
@@ -136,6 +142,13 @@ class PlaylistSorter:
             self.audio_features_cache[track_id] = self.spotify.track_audio_features(track_id)
         return self.audio_features_cache[track_id]
 
+    def _get_artists(self, artist_ids):
+        artist_ids_to_fetch = [aid for aid in artist_ids if aid not in self.artists_cache]
+        if artist_ids_to_fetch:
+            artists = self.spotify.artists(artist_ids_to_fetch)
+            self.artists_cache.update({artist.id: artist for artist in artists})
+        return [self.artists_cache[artist_id] for artist_id in artist_ids]
+
     # Methods in the main sorting workflow
 
     def show_track_info(self, track, added_at=None):
@@ -157,7 +170,7 @@ class PlaylistSorter:
         if self.more_features:
             self.show_audio_features(features)
 
-        artists = self.spotify.artists([artist.id for artist in track.artists])
+        artists = self._get_artists([artist.id for artist in track.artists])
         if len(artists) == 1:
             genres = ", ".join(artists[0].genres)
             print(f"artist genres: {genres}")
@@ -348,7 +361,7 @@ if __name__ == "__main__":
     sorter.all_cached_playlists.remove_playlist(playlist_id)
 
     items = list(sp.all_items(playlist.tracks))
-    sorter.populate_audio_features_cache([item.track.id for item in items])
+    sorter.prefetch_tracks_info([item.track for item in items])
 
     for item in items:
         sorter.sort_item(item)
