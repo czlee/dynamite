@@ -58,6 +58,7 @@ class PlaylistSorter:
         self.playback_start_position_ms = playback_start_position_ms
         self.browser = browser
         self.more_features = more_features
+        self.audio_features_cache = {}
         self.set_up_playlist_cache()
 
     def set_up_playlist_cache(self):
@@ -79,6 +80,11 @@ class PlaylistSorter:
         self.all_cached_playlists.add_from_filename('special.json')
         self.all_cached_playlists.add_from_filename('status.json')
         self.all_cached_playlists.add_playlist(self.all_playlist)
+
+    def populate_audio_features_cache(self, track_ids):
+        with self.spotify.chunked(True):
+            features = self.spotify.tracks_audio_features(track_ids)
+        self.audio_features_cache.update({feature.id: feature for feature in features})
 
     def sort_track(self, track, added_at=None):
         """Main entry point. Sorts the track.
@@ -125,6 +131,11 @@ class PlaylistSorter:
             print(f"\033[0;32m→ added to {playlist.name}\033[0m")
             playlist.add_track_id(track_id)
 
+    def _get_audio_features(self, track_id):
+        if track_id not in self.audio_features_cache:
+            self.audio_features_cache[track_id] = self.spotify.track_audio_features(track_id)
+        return self.audio_features_cache[track_id]
+
     # Methods in the main sorting workflow
 
     def show_track_info(self, track, added_at=None):
@@ -138,7 +149,7 @@ class PlaylistSorter:
             print(f"added on: {added_at.strftime('%Y-%m-%d')}")
         print(f"popularity: {track.popularity}")
 
-        features = self.spotify.track_audio_features(track.id)
+        features = self._get_audio_features(track.id)
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
         print(f"Spotify-reported tempo: \033[1;36m{features.tempo:.1f} bpm\033[0m, "
               f"nearest list: {nearest_tempo_list}bpm")
@@ -166,7 +177,7 @@ class PlaylistSorter:
               f"speech {features.speechiness}, valence {features.valence}\033[0m")
 
     def show_audio_features_of_track(self, track):
-        features = self.spotify.track_audio_features(track.id)
+        features = self._get_audio_features(track.id)
         self.show_audio_features(features)
 
     def show_existing_playlists(self, track):
@@ -225,6 +236,11 @@ class PlaylistSorter:
 
             if user_tempo in ["n", "none"]:
                 return
+
+            if user_tempo in ["f", "features"]:
+                self.show_audio_features_of_track(track)
+                user_error = False
+                continue
 
             playlist = self._get_tempo_playlist_from_user_input(user_tempo)
             if playlist is None:
@@ -331,7 +347,9 @@ if __name__ == "__main__":
         browser=args.browser)
     sorter.all_cached_playlists.remove_playlist(playlist_id)
 
-    items = sp.all_items(playlist.tracks)
+    items = list(sp.all_items(playlist.tracks))
+    sorter.populate_audio_features_cache([item.track.id for item in items])
+
     for item in items:
         sorter.sort_item(item)
         if args.remove_after_sort:
