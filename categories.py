@@ -17,7 +17,7 @@ GENRE_PLAYLISTS = [
     "WCS blues",
     "WCS country",
     "WCS dance-pop",
-    "WCS disco",
+    "WCS 1970s disco",
     "WCS electronic",
     "WCS funk",
     "WCS hip-hop/rap",
