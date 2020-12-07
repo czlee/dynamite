@@ -14,7 +14,8 @@ import tekore
 import cached
 from settings import ALL_PLAYLIST_ID, ALL_PLAYLIST_NAME
 from utils import (clip_tempo, format_artists, format_duration_ms, format_key,
-                   get_spotify_object, get_yes_no_input, parse_playlist_arg)
+                   get_spotify_object, get_yes_no_input, input_with_commands,
+                   parse_playlist_arg)
 
 
 def update_cache(filename, playlists):
@@ -26,6 +27,10 @@ def update_cache(filename, playlists):
 class SkipTrack(Exception):
     """Used to skip sorting this track."""
     pass
+
+
+def input_with_skip(prompt):
+    return input_with_commands(prompt, skip=SkipTrack)
 
 
 class PlaylistSorter:
@@ -138,17 +143,30 @@ class PlaylistSorter:
               f"nearest list: {nearest_tempo_list}bpm")
 
         if self.more_features:
-            key_name = format_key(features.key, features.mode)
-            print(f"\033[90mkey: {key_name}, time sig: {features.time_signature}, "
-                  f"duration: {format_duration_ms(features.duration_ms)}")
-            print(f"acoustic {features.acousticness}, danceable {features.danceability}, "
-                  f"energy {features.energy}, instrumental {features.instrumentalness}")
-            print(f"live {features.liveness}, loudness {features.loudness}, "
-                  f"speech {features.speechiness}, valence {features.valence}\033[0m")
+            self.show_audio_features(features)
 
         artists = self.spotify.artists([artist.id for artist in track.artists])
-        genres = ", ".join(sorted(itertools.chain.from_iterable(artist.genres for artist in artists)))
-        print(f"artist genres: {genres}")
+        if len(artists) == 1:
+            genres = ", ".join(artists[0].genres)
+            print(f"artist genres: {genres}")
+        elif len(artists) > 1:
+            max_name_length = max(len(artist.name) for artist in track.artists)
+            for artist in artists:
+                genres = ", ".join(artist.genres)
+                print(f"genres of \033[0;36m{artist.name.rjust(max_name_length)}\033[0m: {genres}")
+
+    def show_audio_features(self, features):
+        key_name = format_key(features.key, features.mode)
+        print(f"\033[90mkey: {key_name}, time sig: {features.time_signature}, "
+              f"duration: {format_duration_ms(features.duration_ms)}")
+        print(f"acoustic {features.acousticness}, danceable {features.danceability}, "
+              f"energy {features.energy}, instrumental {features.instrumentalness}")
+        print(f"live {features.liveness}, loudness {features.loudness}, "
+              f"speech {features.speechiness}, valence {features.valence}\033[0m")
+
+    def show_audio_features_of_track(self, track):
+        features = self.spotify.track_audio_features(track.id)
+        self.show_audio_features(features)
 
     def show_existing_playlists(self, track):
         """Shows a list of playlists this track is already in, among those in
@@ -191,10 +209,10 @@ class PlaylistSorter:
         playlist = None
         while playlist is None:
             if user_error:
-                user_tempo = input("\033[0;33m✘ Invalid tempo.\033[0m "
+                user_tempo = input_with_skip("\033[0;33m✘ Invalid tempo.\033[0m "
                                    "Type [n]one, [s]kip, or pick a tempo list: ")
             else:
-                user_tempo = input("Which tempo list? ")
+                user_tempo = input_with_skip("Which tempo list? ")
 
             # special cases
             if user_tempo.startswith("remove from "):
@@ -207,9 +225,6 @@ class PlaylistSorter:
             if user_tempo in ["n", "none"]:
                 return
 
-            if user_tempo in ["s", "skip"]:
-                raise SkipTrack
-
             playlist = self._get_tempo_playlist_from_user_input(user_tempo)
             if playlist is None:
                 user_error = True
@@ -220,12 +235,14 @@ class PlaylistSorter:
     def add_to_genre_playlist(self, track):
         """The method name is a slight misnomer - it will actually accept any list."""
 
-        genre = input("Which genre list? " + "['?' to search in browser] " if self.browser else "")
+        genre = input_with_skip(
+            "Which genre list? " + "['?' to search in browser] " if self.browser else "")
+
         while genre not in ["", "s", "skip", "n", "no"]:
 
             if genre == "?" and self.browser:
                 self.start_browser_with_genre_search(track)
-                genre = input("Which genre list? ")
+                genre = input_with_skip("Which genre list? ")
                 continue
 
             if genre == "pop":
@@ -235,21 +252,28 @@ class PlaylistSorter:
                 else:
                     pop_playlist_name = f"{str(release_year // 10)}0s pop"
                 response = get_yes_no_input(f"\033[0;36m▷ Did you mean "
-                                            f"\"WCS {pop_playlist_name}\"?\033[0m")
+                                            f"\"WCS {pop_playlist_name}\"?\033[0m", default="yes")
                 if response:
                     genre = pop_playlist_name
                 else:
+                    genre = input_with_skip("Which genre list? ")
                     continue
 
-            if genre in ["s", "skip"]:
-                raise SkipTrack
-
-            playlist = self.all_cached_playlists.playlist_by_name(f"WCS {genre}")
-            if playlist is None:
-                genre = input(f"\033[0;33m✘ Playlist \"WCS {genre}\" not found.\033[0m Try again? ")
+            if genre in ["f", "features"]:
+                self.show_audio_features_of_track(track)
+                genre = input_with_skip("Which genre list? ")
                 continue
-            self.check_then_add_to_playlist(playlist, track.id)
-            genre = input("Any others? ")
+
+            if genre is not None:
+                playlist = self.all_cached_playlists.playlist_by_name(f"WCS {genre}")
+                if playlist is None:
+                    genre = input_with_skip(
+                        f"\033[0;33m✘ Playlist \"WCS {genre}\" not found.\033[0m Try again? ")
+                    continue
+                self.check_then_add_to_playlist(playlist, track.id)
+
+            genre = input_with_skip("Any others? ")
+
         update_cache('genre.json', self.genre_playlists)
 
     def add_to_wcs_all(self, track):

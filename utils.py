@@ -176,9 +176,40 @@ def parse_playlist_arg(arg, exit_on_error=True):
     return None
 
 
-def get_yes_no_input(prompt):
-    message = prompt + " [y/n] "
-    response = input(message)
-    while response not in ["y", "n", "yes", "n"]:
-        response = input("\033[0;33m✘ Huh?\033[0m Type [y]es or [n]o: ")
+def input_with_commands(prompt, quit=True, skip=None):
+    """`skip`, if provided, must be a subclass of `Exception`, and is
+    raised if the user types "s" or "skip"."""
+    response = input(prompt)
+    if quit and response in ["q", "quit"]:
+        print("Okay, bye!")
+        exit(0)
+    if skip and response in ["s", "skip"]:
+        raise skip
+    return response
+
+
+YES_RESPONSES = ["y", "yes"]
+NO_RESPONSES = ["n", "no"]
+
+def get_yes_no_input(prompt, default=None, **kwargs):
+    allowable_responses = YES_RESPONSES + NO_RESPONSES
+    if default in YES_RESPONSES:
+        message = prompt + " [Y/n] "
+        allowable_responses.append("")
+    elif default in NO_RESPONSES:
+        message = prompt + " [y/N] "
+        allowable_responses.append("")
+    elif default is None:
+        message = prompt + " [y/n] "
+    else:
+        raise ValueError(f"Invalid default response: {default!r}")
+
+    response = input_with_commands(message, **kwargs)
+
+    while response.lower() not in allowable_responses:
+        response = input_with_commands("\033[0;33m✘ Huh?\033[0m Type [y]es or [n]o: ", **kwargs)
+
+    if response == "":
+        response = default
+
     return response[0] == "y"
