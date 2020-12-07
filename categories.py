@@ -22,6 +22,7 @@ GENRE_PLAYLISTS = [
     "WCS funk",
     "WCS hip-hop/rap",
     "WCS jazz-like",
+    "WCS k-pop",
     "WCS latin pop",
     "WCS reggae",
     "WCS rock",

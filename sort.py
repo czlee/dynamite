@@ -136,6 +136,7 @@ class PlaylistSorter:
         print(f"released: \033[1;36m{track.album.release_date}\033[0m")
         if added_at:
             print(f"added on: {added_at.strftime('%Y-%m-%d')}")
+        print(f"popularity: {track.popularity}")
 
         features = self.spotify.track_audio_features(track.id)
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
