@@ -7,8 +7,10 @@ import argparse
 import itertools
 import json
 import subprocess
+import time
 import urllib.parse
 
+import httpx
 import tekore
 
 import cached
@@ -133,7 +135,21 @@ class PlaylistSorter:
         if playlist.contains_track_id(track_id):
             print(f"\033[0;35m✓ already in {playlist.name}\033[0m")
         else:
-            self.spotify.playlist_add(playlist.id, ["spotify:track:" + track_id])
+            for i in range(10):
+                try:
+                    self.spotify.playlist_add(playlist.id, ["spotify:track:" + track_id])
+                except httpx.ConnectError as e:
+                    if e.errno == 101:
+                        print(f"\033[0;32m△ Network unreachable, retrying...")
+                        time.sleep(6)
+                        continue
+                    else:
+                        raise
+                break
+            else:
+                print(f"\033[1;31m× Gave up adding to {playlist.name}")
+                return
+
             print(f"\033[0;32m→ added to {playlist.name}\033[0m")
             playlist.add_track_id(track_id)
 
