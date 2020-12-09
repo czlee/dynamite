@@ -71,7 +71,7 @@ else:
         exit(1)
     else:
         track = playing.item
-        print("\033[1;33mCurrently playing:\033[0m")
+        print("\033[1;32mCurrently playing:\033[0m")
 
 
 if args.sort:

@@ -7,7 +7,7 @@ from utils import (format_artists, format_release_date, format_tempo,
                    get_spotify_object, parse_playlist_arg)
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('playlist',
+parser.add_argument('playlist', nargs='?',
     help="playlist to show, specify by either name or ID")
 parser.add_argument('--no-bpm-clip', '-B', default=True, action='store_false', dest='bpm_clip',
     help="don't clip BPMs to be between 60 and 140")
@@ -52,7 +52,17 @@ tempo_playlists = CachedPlaylistGroup.from_filename('tempo.json')
 genre_playlists = CachedPlaylistGroup.from_filename('genre.json')
 sp = get_spotify_object(args.tekore_cfg)
 
-playlist_id = parse_playlist_arg(args.playlist)
+if args.playlist:
+    playlist_id = parse_playlist_arg(args.playlist)
+else:
+    playing = sp.playback()
+    if playing.context.type == 'playlist':
+        playlist_id = playing.context.uri.rsplit(':', maxsplit=1)[-1]
+        print("\033[1;32mCurrently playing:\033[0m")
+    else:
+        print(f"\033[0;33mCurrently playing context isn't a playlist.\033[0m")
+        exit(1)
+
 playlist = sp.playlist(playlist_id)
 print(f"\033[1;36m{playlist.name}\033[0;36m spotify:playlist:{playlist.id}\033[0m")
 
