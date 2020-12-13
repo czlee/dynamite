@@ -172,10 +172,11 @@ class PlaylistSorter:
         print(f"artist: \033[0;36m{format_artists(track.artists)}\033[0m")
         print(f" album: \033[0;36m{track.album.name}\033[0m")
         print(f"\033[90mURI: spotify:track:{track.id}\033[0m")
-        print(f"released: \033[1;36m{track.album.release_date}\033[0m")
+        print(f"released: \033[1;36m{track.album.release_date}\033[0m, "
+              f"popularity: {track.popularity}")
         if added_at:
             print(f"added on: {added_at.strftime('%Y-%m-%d')}")
-        print(f"popularity: {track.popularity}")
+        # print(f"popularity: {track.popularity}")
 
         features = self._get_audio_features(track.id)
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
