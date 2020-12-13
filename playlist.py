@@ -56,11 +56,16 @@ if args.playlist:
     playlist_id = parse_playlist_arg(args.playlist)
 else:
     playing = sp.playback()
-    if playing.context.type == 'playlist':
+    if not playing.context:
+        print("\033[0;33mNot currently playing in a context.\033[0m")
+        print("Specify a playlist by name or URI to see info about it.")
+        exit(1)
+    elif playing.context.type == 'playlist':
         playlist_id = playing.context.uri.rsplit(':', maxsplit=1)[-1]
         print("\033[1;32mCurrently playing:\033[0m")
     else:
-        print(f"\033[0;33mCurrently playing context isn't a playlist.\033[0m")
+        print(f"\033[0;33mCurrently playing context isn't a playlist.\033[0m (found: {playing.context.type})")
+        print("Specify a playlist by name or URI to see info about it.")
         exit(1)
 
 playlist = sp.playlist(playlist_id)
