@@ -64,7 +64,8 @@ else:
         playlist_id = playing.context.uri.rsplit(':', maxsplit=1)[-1]
         print("\033[1;32mCurrently playing:\033[0m")
     else:
-        print(f"\033[0;33mCurrently playing context isn't a playlist.\033[0m (found: {playing.context.type})")
+        print("\033[0;33mCurrently playing context isn't a playlist."
+              f"\033[0m (found: {playing.context.type})")
         print("Specify a playlist by name or URI to see info about it.")
         exit(1)
 

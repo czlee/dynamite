@@ -191,6 +191,7 @@ def input_with_commands(prompt, quit=True, skip=None):
 YES_RESPONSES = ["y", "yes"]
 NO_RESPONSES = ["n", "no"]
 
+
 def get_yes_no_input(prompt, default=None, **kwargs):
     allowable_responses = YES_RESPONSES + NO_RESPONSES
     if default in YES_RESPONSES:

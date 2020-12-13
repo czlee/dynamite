@@ -30,7 +30,7 @@ def update_cached_playlists(spotify):
                     print(f"\033[1;32mCreated playlist: {playlist_name}\033[0m")
                 else:
                     print(f"\033[0;33mWarning: no playlist called '{playlist_name}' found\033[0m")
-                    missing_found +=1
+                    missing_found += 1
                     continue
 
             print(f"Updating cache for [{playlist.id}] {playlist.name}...")
@@ -44,11 +44,11 @@ def update_cached_playlists(spotify):
 
     if missing_found:
         if missing_found == 1:
-            print(f"\033[1;33m1 playlist wasn't found.\n"
-                  f"Rerun this script with --create-missing to create it.\033[0m")
+            print("\033[1;33m1 playlist wasn't found.\n"
+                  "Rerun this script with --create-missing to create it.\033[0m")
         else:
             print(f"\033[1;33m{missing_found} playlists weren't found.\n"
-                  f"Rerun this script with --create-missing to create them.\033[0m")
+                  "Rerun this script with --create-missing to create them.\033[0m")
 
 
 if __name__ == "__main__":

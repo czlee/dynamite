@@ -4,7 +4,6 @@ be added to "WCS all", one of the WCS tempo playlists, and one or more of the
 WCS genre playlists."""
 
 import argparse
-import itertools
 import json
 import subprocess
 import time
@@ -140,7 +139,7 @@ class PlaylistSorter:
                     self.spotify.playlist_add(playlist.id, ["spotify:track:" + track_id])
                 except httpx.ConnectError as e:
                     if e.errno == 101:
-                        print(f"\033[0;32m△ Network unreachable, retrying...")
+                        print("\033[0;32m△ Network unreachable, retrying...")
                         time.sleep(6)
                         continue
                     else:

@@ -49,7 +49,8 @@ if args.track:
         tracks, = sp.search(args.track)
         for t in tracks.items:
             if args.verbose:
-                print(f"Search result: {t.id} {t.name} ({format_artists(t.artists)}), album: {t.album.name}")
+                print(f"Search result: {t.id} {t.name} "
+                      f"🎤 {format_artists(t.artists)} 💿 {t.album.name}")
             if len(sorter.all_cached_playlists.playlists_containing_track(t.id)) > 0:
                 track = t
                 print("\033[1;33mFirst search result in existing playlists:\033[0m")
