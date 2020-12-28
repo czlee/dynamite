@@ -168,10 +168,10 @@ class PlaylistSorter:
 
     def show_track_info(self, track, added_at=None):
         """Prints detailed information about a track."""
-        print(f"\033[30;47m title:\033[0m \033[1;36m{track.name}\033[0m")
-        print(f"\033[30;47martist:\033[0m \033[0;36m{format_artists(track.artists)}\033[0m")
-        print(f"\033[30;47m album:\033[0m \033[0;36m{track.album.name}\033[0m")
-        print(f"\033[30;47m   URI:\033[0;90m spotify:track:{track.id}\033[0m")
+        print(f" title: \033[1;36m{track.name}\033[0m")
+        print(f"artist: \033[0;36m{format_artists(track.artists)}\033[0m")
+        print(f" album: \033[0;36m{track.album.name}\033[0m")
+        print(f"   \033[0;90mURI: spotify:track:{track.id}\033[0m")
         print(f"released: \033[1;36m{track.album.release_date}\033[0m, "
               f"popularity: \033[0;33m{track.popularity}\033[0m")
         if added_at:
@@ -218,7 +218,7 @@ class PlaylistSorter:
 
         print("\033[0;33mThis track is already in:\033[0m")
         for playlist in already_in:
-            print(f" - {playlist.name}")
+            print(f" ∙ {playlist.name}")
 
     def check_if_want_to_sort(self, track):
         """Checks whether we would want to sort this track. Returns True if the
