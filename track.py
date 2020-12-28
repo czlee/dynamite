@@ -16,8 +16,8 @@ parser.add_argument("--tekore-cfg", '-T', type=str, default='tekore.cfg',
     help="file to use to store Tekore (Spotify) user token (default tekore.cfg)")
 parser.add_argument("--browser", type=str, default="wslview",
     help="browser to open searches in (default wslview)")
-parser.add_argument("--more-features", "-f", action="store_true", default=False,
-    help="show more of Spotify's audio features")
+parser.add_argument("--no-features", "-F", action="store_false", default=True, dest="more_features",
+    help="don't show more of Spotify's audio features")
 parser.add_argument("--sort", action="store_true", default=False,
     help="sort the track")
 parser.add_argument("--verbose", "-v", action="store_true", default=False,

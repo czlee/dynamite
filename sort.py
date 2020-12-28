@@ -168,12 +168,12 @@ class PlaylistSorter:
 
     def show_track_info(self, track, added_at=None):
         """Prints detailed information about a track."""
-        print(f" title: \033[1;36m{track.name}\033[0m")
-        print(f"artist: \033[0;36m{format_artists(track.artists)}\033[0m")
-        print(f" album: \033[0;36m{track.album.name}\033[0m")
-        print(f"\033[90mURI: spotify:track:{track.id}\033[0m")
+        print(f"\033[30;47m title:\033[0m \033[1;36m{track.name}\033[0m")
+        print(f"\033[30;47martist:\033[0m \033[0;36m{format_artists(track.artists)}\033[0m")
+        print(f"\033[30;47m album:\033[0m \033[0;36m{track.album.name}\033[0m")
+        print(f"\033[30;47m   URI:\033[0;90m spotify:track:{track.id}\033[0m")
         print(f"released: \033[1;36m{track.album.release_date}\033[0m, "
-              f"popularity: {track.popularity}")
+              f"popularity: \033[0;33m{track.popularity}\033[0m")
         if added_at:
             print(f"added on: {added_at.strftime('%Y-%m-%d')}")
         # print(f"popularity: {track.popularity}")
@@ -200,10 +200,10 @@ class PlaylistSorter:
         key_name = format_key(features.key, features.mode)
         print(f"\033[90mkey: {key_name}, time sig: {features.time_signature}, "
               f"duration: {format_duration_ms(features.duration_ms)}")
-        print(f"acoustic {features.acousticness}, danceable {features.danceability}, "
-              f"energy {features.energy}, instrumental {features.instrumentalness}")
-        print(f"live {features.liveness}, loudness {features.loudness}, "
-              f"speech {features.speechiness}, valence {features.valence}\033[0m")
+        print(f"acoustic {features.acousticness:.3f}, danceable {features.danceability:.3f}, "
+              f"energy {features.energy:.3f}, instrum {features.instrumentalness:.3f}")
+        print(f"    live {features.liveness:.3f}, loudness {features.loudness: .3f}, "
+              f"speech {features.speechiness:.3f}, valence {features.valence:.3f}\033[0m")
 
     def show_audio_features_of_track(self, track):
         features = self._get_audio_features(track.id)
