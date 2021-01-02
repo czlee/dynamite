@@ -1,5 +1,7 @@
 # Helper scripts for Spotify playlists
 
+© Chuan-Zheng Lee 2019–2020
+
 This repository contains some scripts that I use to help manage my Spotify playlists. The scripts do things like:
 - Print a table summarizing information about tracks in a playlist (`playlist.py`)
 - Print information about a track, or the currently playing track (`track.py`)
