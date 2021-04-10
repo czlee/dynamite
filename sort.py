@@ -291,6 +291,13 @@ class PlaylistSorter:
                 genre = input_with_skip("Which genre list? ")
                 continue
 
+            if genre.startswith("remove from "):
+                remove_playlist = self.all_cached_playlists.playlist_by_name(f"WCS {genre[12:]}")
+                if remove_playlist:
+                    self.remove_track(remove_playlist, track)
+                    genre = input_with_skip("Which genre list? ")
+                    continue
+
             if genre == "pop":
                 release_year = int(track.album.release_date[:4])
                 if release_year < 1990:
