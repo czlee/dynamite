@@ -176,7 +176,6 @@ class PlaylistSorter:
               f"popularity: \033[0;33m{track.popularity}\033[0m")
         if added_at:
             print(f"added on: {added_at.strftime('%Y-%m-%d')}")
-        # print(f"popularity: {track.popularity}")
 
         features = self._get_audio_features(track.id)
         nearest_tempo_list = int(round(clip_tempo(features.tempo), ndigits=-1))
@@ -185,6 +184,7 @@ class PlaylistSorter:
 
         if self.more_features:
             self.show_audio_features(features)
+            self.show_available_markets(track)
 
         artists = self._get_artists([artist.id for artist in track.artists])
         if len(artists) == 1:
@@ -208,6 +208,14 @@ class PlaylistSorter:
     def show_audio_features_of_track(self, track):
         features = self._get_audio_features(track.id)
         self.show_audio_features(features)
+
+    def show_available_markets(self, track, markets=['NZ', 'US', 'AU', 'FR']):
+        market_strings = []
+        for market in markets:
+            mark = "✅" if market in track.available_markets else "❌"
+            market_strings.append(f"{market}{mark}")
+        market_string = ", ".join(market_strings)
+        print(f"\033[90mmarkets: {market_string}\033[0m")
 
     def show_existing_playlists(self, track):
         """Shows a list of playlists this track is already in, among those in
