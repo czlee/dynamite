@@ -44,8 +44,8 @@ STATUS_PLAYLISTS = [
     "WCS unfiled",
     "WCS added since 2019-07-01",
     "WCS added since 2019-11-14",
-    "WCS added during pandemic",
-    "WCS released during pandemic",
+    "WCS added during lockdown",
+    "WCS released during lockdown",
     "WCS added since 2020-10-16",
     "WCS released since 2020-10-16",
 ]
