@@ -20,6 +20,9 @@ parser.add_argument("--no-features", "-F", action="store_false", default=True, d
     help="don't show more of Spotify's audio features")
 parser.add_argument("--sort", action="store_true", default=False,
     help="sort the track")
+parser.add_argument("--markets", nargs='+', default=['NZ', 'US', 'AU', 'FR'],
+    help="markets of interest (default NZ US AU FR), "
+         "or 'all' to list all markets (normally a bad idea)")
 parser.add_argument("--verbose", "-v", action="store_true", default=False,
     help="show more information about the search")
 args = parser.parse_args()
@@ -35,7 +38,8 @@ sorter = PlaylistSorter(sp,
     prompt_for_all=True,
     browser=args.browser,
     playback_start_position_ms=None,
-    more_features=args.more_features)
+    more_features=args.more_features,
+    markets=None if 'all' in args.markets else args.markets)
 
 if args.track:
 

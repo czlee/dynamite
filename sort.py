@@ -38,7 +38,8 @@ class PlaylistSorter:
     """Common functions for scripts that involve sorting tracks."""
 
     def __init__(self, spotify, prompt_for_all=False, if_already_sorted="prompt",
-                 playback_start_position_ms=15000, browser=None, more_features=False):
+                 playback_start_position_ms=15000, browser=None, more_features=False,
+                 markets=['NZ', 'US', 'AU', 'FR']):
         """
         `spotify` should be a tekore.Spotify object.
         `prompt_for_all` specifies whether the user should be prompted about
@@ -59,6 +60,7 @@ class PlaylistSorter:
         self.playback_start_position_ms = playback_start_position_ms
         self.browser = browser
         self.more_features = more_features
+        self.markets = markets
         self.audio_features_cache = {}
         self.artists_cache = {}
         self.set_up_playlist_cache()
@@ -209,12 +211,20 @@ class PlaylistSorter:
         features = self._get_audio_features(track.id)
         self.show_audio_features(features)
 
-    def show_available_markets(self, track, markets=['NZ', 'US', 'AU', 'FR']):
-        market_strings = []
-        for market in markets:
-            mark = "✅" if market in track.available_markets else "❌"
-            market_strings.append(f"{market}{mark}")
-        market_string = ", ".join(market_strings)
+    def show_available_markets(self, track):
+        """Show which markets the track is available in.
+        If `markets` is `None`, prints a list of all markets.
+        Otherwise, shows the specified markets with ✅ or ❌.
+        """
+        if self.markets is None:
+            market_string = " ".join(track.available_markets)
+        else:
+            market_strings = []
+            for market in self.markets:
+                mark = "✅" if market in track.available_markets else "❌"
+                market_strings.append(f"{market}{mark}")
+            market_string = ", ".join(market_strings)
+
         print(f"\033[90mmarkets: {market_string}\033[0m")
 
     def show_existing_playlists(self, track):
